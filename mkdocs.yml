@@ -1,0 +1,57 @@
+site_name: Curtaincall
+site_description: Testing library for terminal applications
+site_url: https://thekevinbot.github.io/curtaincall/
+repo_url: https://github.com/thekevinbot/curtaincall
+repo_name: thekevinbot/curtaincall
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: deep purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: deep purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - content.code.copy
+    - navigation.sections
+    - navigation.expand
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_source: false
+            show_root_heading: true
+            members_order: source
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+nav:
+  - Overview: index.md
+  - Guide:
+      - Getting Started: guide/getting-started.md
+      - Terminal: guide/terminal.md
+      - Locators: guide/locators.md
+      - Assertions: guide/assertions.md
+      - Snapshots: guide/snapshots.md
+      - Input: guide/input.md
+      - Fixtures: guide/fixtures.md
+  - API Reference:
+      - Terminal: api/terminal.md
+      - Locator: api/locator.md
+      - expect: api/expect.md
+      - Types: api/types.md

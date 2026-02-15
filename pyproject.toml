@@ -1,0 +1,67 @@
+[project]
+name = "curtaincall"
+version = "0.1.0"
+description = "Testing library for terminal applications"
+readme = "README.md"
+authors = [
+    { name = "thekevinbot", email = "248217931+thekevinbot@users.noreply.github.com" }
+]
+requires-python = ">=3.12"
+license = "MIT"
+dependencies = [
+    "pexpect>=4.9",
+    "pyte>=0.8",
+]
+
+[project.entry-points.pytest11]
+curtaincall = "curtaincall.pytest_plugin"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.0",
+    "pytest-describe>=2.0",
+    "pytest-watcher>=0.4",
+    "ruff>=0.8",
+    "rust-just>=1.0",
+    "bandit>=1.7",
+]
+docs = [
+    "mkdocs-material",
+    "mkdocstrings[python]",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "C4", "C90", "UP", "ARG", "SIM", "PTH", "PLR", "RUF"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.pylint]
+max-args = 8
+max-statements = 50
+
+[tool.ruff.lint.per-file-ignores]
+"*_test.py" = ["PLR2004", "PLR0915", "C901"]
+"tests/**/*.py" = ["PLR2004", "PLR0915", "C901"]
+
+[tool.pytest.ini_options]
+testpaths = ["src/curtaincall", "tests"]
+python_files = "*_test.py"
+python_functions = ["it_*", "test_*"]
+
+[tool.coverage.run]
+source = ["curtaincall"]
+branch = true
+omit = ["*_test.py"]
+
+[tool.coverage.report]
+fail_under = 55
