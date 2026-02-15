@@ -1,6 +1,6 @@
 [project]
 name = "curtaincall"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Testing library for terminal applications"
 readme = "README.md"
 authors = [
@@ -32,8 +32,14 @@ docs = [
 ]
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.version.raw-options]
+local_scheme = "no-local-version"
 
 [tool.ruff]
 target-version = "py312"
@@ -59,9 +65,9 @@ python_files = "*_test.py"
 python_functions = ["it_*", "test_*"]
 
 [tool.coverage.run]
-source = ["curtaincall"]
+source = ["src/curtaincall"]
 branch = true
 omit = ["*_test.py"]
 
 [tool.coverage.report]
-fail_under = 55
+fail_under = 95
