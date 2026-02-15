@@ -2,9 +2,31 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 import pytest
 
 from curtaincall.terminal import Terminal
+
+
+def _create_terminal_factory(
+    terminals: list[Terminal],
+) -> Callable[..., Terminal]:
+    """Create a terminal factory function that tracks created terminals."""
+
+    def _create(
+        command: str,
+        *,
+        rows: int = 30,
+        cols: int = 80,
+        env: dict[str, str] | None = None,
+    ) -> Terminal:
+        term = Terminal(command, rows=rows, cols=cols, env=env)
+        term.start()
+        terminals.append(term)
+        return term
+
+    return _create
 
 
 @pytest.fixture
@@ -21,19 +43,7 @@ def terminal():
     """
     terminals: list[Terminal] = []
 
-    def _create(
-        command: str,
-        *,
-        rows: int = 30,
-        cols: int = 80,
-        env: dict[str, str] | None = None,
-    ) -> Terminal:
-        term = Terminal(command, rows=rows, cols=cols, env=env)
-        term.start()
-        terminals.append(term)
-        return term
-
-    yield _create
+    yield _create_terminal_factory(terminals)
 
     for t in terminals:
         t.kill()

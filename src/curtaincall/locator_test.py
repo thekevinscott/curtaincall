@@ -102,3 +102,8 @@ def describe_locator_regex_match():
         term = _mock_terminal(["Hello, World!"])
         loc = Locator(term, re.compile(r"Hello"), full=True)
         assert not loc.is_visible()
+
+    def it_returns_empty_string_for_non_matching_regex():
+        term = _mock_terminal(["Hello, World!"])
+        loc = Locator(term, re.compile(r"NOPE"))
+        assert loc.text() == ""
