@@ -20,8 +20,17 @@ def _create_terminal_factory(
         rows: int = 30,
         cols: int = 80,
         env: dict[str, str] | None = None,
+        history: int = 1000,
+        suppress_stderr: bool = False,
     ) -> Terminal:
-        term = Terminal(command, rows=rows, cols=cols, env=env)
+        term = Terminal(
+            command,
+            rows=rows,
+            cols=cols,
+            env=env,
+            history=history,
+            suppress_stderr=suppress_stderr,
+        )
         term.start()
         terminals.append(term)
         return term

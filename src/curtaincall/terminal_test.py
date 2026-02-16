@@ -25,9 +25,9 @@ def describe_terminal_init():
         assert term._rows == 24
         assert term._cols == 80
 
-    def it_creates_pyte_screen():
+    def it_creates_pyte_history_screen():
         term = _make_terminal(rows=10, cols=40)
-        assert isinstance(term._screen, pyte.Screen)
+        assert isinstance(term._screen, pyte.HistoryScreen)
         assert term._screen.lines == 10
         assert term._screen.columns == 40
 
@@ -48,6 +48,19 @@ def describe_terminal_init():
     def it_defaults_env_to_none():
         term = Terminal("echo")
         assert term._env is None
+
+    def it_stores_command_with_suppress_stderr():
+        term = Terminal("my-tool --help", suppress_stderr=True)
+        assert "2>/dev/null" in term._command
+        assert "my-tool --help" in term._command
+
+    def it_wraps_in_bash_for_suppress_stderr():
+        term = Terminal("my-tool --help", suppress_stderr=True)
+        assert term._command.startswith("bash -c ")
+
+    def it_leaves_command_unchanged_without_suppress_stderr():
+        term = Terminal("my-tool --help")
+        assert term._command == "my-tool --help"
 
     def it_uses_reentrant_lock():
         term = _make_terminal()
@@ -189,12 +202,52 @@ def describe_terminal_get_buffer():
         line = "".join(buf[0])
         assert line.startswith("Hello")
 
+    def it_includes_scrollback_lines():
+        term = _make_terminal(rows=3, cols=10)
+        # Feed enough lines to push content into scrollback
+        for i in range(6):
+            term._stream.feed(f"line-{i}\r\n".encode())
+        buf = term.get_buffer()
+        # Should have scrollback + viewport rows (more than just 3)
+        assert len(buf) > 3
+        full_text = "\n".join("".join(row).rstrip() for row in buf)
+        assert "line-0" in full_text
+        assert "line-5" in full_text
+
 
 def describe_terminal_get_viewable_buffer():
 
-    def it_returns_same_as_get_buffer():
+    def it_returns_same_as_get_buffer_without_scrollback():
         term = _make_terminal(rows=3, cols=5)
         assert term.get_viewable_buffer() == term.get_buffer()
+
+    def it_excludes_scrollback():
+        term = _make_terminal(rows=3, cols=10)
+        for i in range(6):
+            term._stream.feed(f"line-{i}\r\n".encode())
+        viewable = term.get_viewable_buffer()
+        assert len(viewable) == 3
+        full = term.get_buffer()
+        assert len(full) > len(viewable)
+
+
+def describe_terminal_get_char_at():
+
+    def it_reads_viewport_char():
+        term = _make_terminal(rows=3, cols=10)
+        term._stream.feed(b"Hello")
+        char = term._get_char_at(0, 0)
+        assert char.data == "H"
+
+    def it_reads_scrollback_char():
+        term = _make_terminal(rows=3, cols=10)
+        for i in range(6):
+            term._stream.feed(f"line-{i}\r\n".encode())
+        # Row 0 should be scrollback line "line-0"
+        char = term._get_char_at(0, 0)
+        assert char.data == "l"
+        char = term._get_char_at(0, 5)
+        assert char.data == "0"
 
 
 def describe_terminal_set_size():

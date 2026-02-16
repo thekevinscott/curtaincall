@@ -44,12 +44,19 @@ test *args:
     uv run pytest {{args}}
 
 # Run tests with coverage (fails if under threshold)
+# Uses `coverage run` instead of `pytest --cov` because curtaincall is a
+# pytest plugin that gets imported before --cov starts measuring.
 test-cov:
-    uv run pytest --cov --cov-report=term-missing
+    uv run coverage run -p --source=src/curtaincall -m pytest
+    uv run coverage combine
+    uv run coverage report --fail-under=95
 
 # Run tests with coverage for CI (outputs XML)
 test-ci:
-    uv run pytest --cov --cov-report=xml
+    uv run coverage run -p --source=src/curtaincall -m pytest
+    uv run coverage combine
+    uv run coverage xml
+    uv run coverage report --fail-under=95
 
 # Run local CI checks (pre-push). Lint/format in parallel, then tests.
 ci:
