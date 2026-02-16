@@ -114,9 +114,9 @@ class LocatorAssertions:
             cells = self._locator.cells
             if not cells:
                 return False
-            screen = self._locator._terminal._screen
+            terminal = self._locator._terminal
             for cell in cells:
-                char = screen.buffer[cell.row][cell.col]
+                char = terminal._get_char_at(cell.row, cell.col)
                 if not _color_matches(char.fg, color):
                     return False
             return True
@@ -135,9 +135,9 @@ class LocatorAssertions:
             cells = self._locator.cells
             if not cells:
                 return False
-            screen = self._locator._terminal._screen
+            terminal = self._locator._terminal
             for cell in cells:
-                char = screen.buffer[cell.row][cell.col]
+                char = terminal._get_char_at(cell.row, cell.col)
                 if not _color_matches(char.bg, color):
                     return False
             return True

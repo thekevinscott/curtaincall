@@ -186,11 +186,30 @@ def test_table_output(terminal, snapshot):
 
 Update snapshots with `pytest --snapshot-update`.
 
+### Scrollback Buffer
+
+Locators search the full buffer -- both the visible viewport and lines that have scrolled off the top. This is important when stderr warnings or verbose output push your content off-screen.
+
+```python
+# Even if warnings fill the viewport, stdout content is found in scrollback
+term = terminal("python -m my_module --help", rows=10, cols=80)
+expect(term.get_by_text("Usage:")).to_be_visible()  # searches scrollback too
+```
+
+Control scrollback depth with the `history` parameter (default 1000 lines):
+
+```python
+term = terminal("my_command", history=5000)  # large scrollback
+```
+
 ### Screen Inspection
 
 ```python
-# Full buffer as 2D list of characters
+# Full buffer (scrollback + viewport) as 2D list of characters
 buffer = term.get_buffer()         # list[list[str]]
+
+# Visible viewport only (no scrollback)
+viewable = term.get_viewable_buffer()
 
 # Cursor position
 cursor = term.get_cursor()         # CursorPosition(x=0, y=5)
@@ -218,6 +237,8 @@ def test_example(terminal):
 | `rows` | `int` | `30` | Terminal height |
 | `cols` | `int` | `80` | Terminal width |
 | `env` | `dict` | `None` | Extra environment variables |
+| `history` | `int` | `1000` | Scrollback buffer depth (lines) |
+| `suppress_stderr` | `bool` | `False` | Redirect stderr to `/dev/null` |
 
 ### Multiple Terminals
 
@@ -264,6 +285,25 @@ def test_ctrl_c(terminal):
 
     expect(term.get_by_text("Cleanup complete")).to_be_visible()
 ```
+
+## Stderr and PTY Behavior
+
+PTYs merge stdout and stderr into a single stream. This means warnings or log messages on stderr share the terminal screen with your application's stdout. If stderr is verbose, it can push stdout content off the visible viewport.
+
+Curtaincall handles this in two ways:
+
+1. **Scrollback buffer** (default): `get_by_text()` searches the full buffer including content scrolled off-screen. This is automatic -- no configuration needed.
+
+2. **`suppress_stderr`**: When you don't need stderr at all, suppress it entirely:
+
+```python
+term = terminal("python -m my_module --help", suppress_stderr=True)
+expect(term.get_by_text("Usage:")).to_be_visible()
+```
+
+This wraps the command in `bash -c '... 2>/dev/null'`, redirecting stderr before it reaches the PTY.
+
+**Recommendation**: Prefer using installed entry points (`my-tool --help`) over `python -m` invocation when possible, as the latter is more likely to produce import warnings.
 
 ## Requirements
 

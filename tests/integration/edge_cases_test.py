@@ -131,10 +131,65 @@ def describe_terminal_edge_cases():
         text = term._get_screen_text()
         assert "Running" in text
 
-    def it_get_viewable_buffer_matches_get_buffer(terminal, fixture_cmd):
+    def it_get_viewable_buffer_matches_get_buffer_without_scrollback(terminal, fixture_cmd):
+        """With no scrollback, viewable == full buffer."""
         term = terminal(fixture_cmd("hello.py"))
         expect(term.get_by_text("Hello, World!")).to_be_visible()
         assert term.get_viewable_buffer() == term.get_buffer()
+
+
+def describe_scrollback_buffer():
+    """Tests for scrollback buffer support (issue #1)."""
+
+    def it_finds_text_scrolled_off_viewport(terminal, fixture_cmd):
+        """Stderr warnings that push stdout off-screen should not hide content."""
+        term = terminal(fixture_cmd("stderr_warning.py"), rows=5, cols=60)
+        expect(term.get_by_text("STDERR_DONE")).to_be_visible()
+        # The Usage line may have scrolled off the 5-row viewport,
+        # but get_by_text searches the full buffer including scrollback
+        expect(term.get_by_text("Usage: my-tool")).to_be_visible()
+
+    def it_scrollback_not_in_viewable_buffer(terminal, fixture_cmd):
+        """get_viewable_buffer excludes scrollback lines."""
+        term = terminal(fixture_cmd("stderr_warning.py"), rows=5, cols=60)
+        expect(term.get_by_text("STDERR_DONE")).to_be_visible()
+        viewable = term.get_viewable_buffer()
+        full = term.get_buffer()
+        assert len(full) > len(viewable)
+        assert len(viewable) == 5
+
+    def it_snapshot_only_shows_viewport(terminal, fixture_cmd):
+        """to_snapshot() should render the viewport, not scrollback."""
+        term = terminal(fixture_cmd("large_output.py"), rows=5, cols=40)
+        expect(term.get_by_text("DONE")).to_be_visible(timeout=10.0)
+        snap = term.to_snapshot()
+        lines = snap.split("\n")
+        # 1 top border + 5 content + 1 bottom border = 7 lines
+        assert len(lines) == 7
+
+    def it_large_output_searchable_in_scrollback(terminal, fixture_cmd):
+        """200 lines of output: early lines in scrollback, still findable."""
+        term = terminal(fixture_cmd("large_output.py"), rows=10, cols=40)
+        expect(term.get_by_text("DONE")).to_be_visible(timeout=10.0)
+        # line-0000 was emitted first and is certainly in scrollback
+        expect(term.get_by_text("line-0000")).to_be_visible()
+        expect(term.get_by_text("line-0100")).to_be_visible()
+
+
+def describe_suppress_stderr():
+    """Tests for suppress_stderr option."""
+
+    def it_suppresses_stderr_warnings(terminal, fixture_cmd):
+        """With suppress_stderr=True, stderr output should not appear."""
+        term = terminal(
+            fixture_cmd("stderr_warning.py"),
+            rows=10, cols=60,
+            suppress_stderr=True,
+        )
+        expect(term.get_by_text("STDERR_DONE")).to_be_visible()
+        text = term._get_screen_text()
+        assert "WARNING" not in text
+        expect(term.get_by_text("Usage: my-tool")).to_be_visible()
 
 
 def describe_snapshot_edge_cases():

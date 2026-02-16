@@ -200,7 +200,7 @@ def describe_locator_assertions():
 
         char_mock = MagicMock()
         char_mock.fg = "red"
-        loc._terminal._screen.buffer = {0: {0: char_mock}}
+        loc._terminal._get_char_at.return_value = char_mock
 
         assertions = LocatorAssertions(loc)
         assertions.to_have_fg_color("red", timeout=0.5)
@@ -217,7 +217,7 @@ def describe_locator_assertions():
 
         char_mock = MagicMock()
         char_mock.fg = "red"
-        loc._terminal._screen.buffer = {0: {0: char_mock}}
+        loc._terminal._get_char_at.return_value = char_mock
 
         assertions = LocatorAssertions(loc)
         with pytest.raises(AssertionError):
@@ -246,7 +246,7 @@ def describe_locator_assertions():
 
         char_mock = MagicMock()
         char_mock.bg = "blue"
-        loc._terminal._screen.buffer = {0: {0: char_mock}}
+        loc._terminal._get_char_at.return_value = char_mock
 
         assertions = LocatorAssertions(loc)
         assertions.to_have_bg_color("blue", timeout=0.5)
@@ -263,7 +263,7 @@ def describe_locator_assertions():
 
         char_mock = MagicMock()
         char_mock.bg = "blue"
-        loc._terminal._screen.buffer = {0: {0: char_mock}}
+        loc._terminal._get_char_at.return_value = char_mock
 
         assertions = LocatorAssertions(loc)
         with pytest.raises(AssertionError):
