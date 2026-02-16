@@ -63,8 +63,19 @@ uv run just ci              # Full local CI (lint + format + unit tests)
 ## Versioning & Releases
 - **hatch-vcs**: version derived from git tags, no hardcoded version in pyproject.toml
 - `__version__` uses `importlib.metadata.version("curtaincall")`
-- **Patch releases** run nightly at 2am UTC (automatic via `patch-release.yml`)
-- **Minor releases** triggered manually via GitHub Actions -> "Minor Release"
+- **Do NOT hardcode version** in `pyproject.toml` -- it uses `dynamic = ["version"]`
+
+### Cutting a Release
+- **Patch** (bug fixes): runs nightly at 2am UTC automatically, or trigger manually: `gh workflow run "Patch Release (Nightly)"`
+- **Minor** (new features): trigger manually: `gh workflow run "Minor Release"`
+- **Major**: create and push a tag manually: `git tag -a v2.0.0 -m "Release v2.0.0" && git push origin v2.0.0`
+
+The publish workflow (`publish.yml`) handles: tag creation -> `uv build` -> PyPI publish (trusted publishing) -> GitHub Release with auto-generated notes. On failure, it rolls back the tag.
+
+### Version Scheme
+- Tags follow `v{major}.{minor}.{patch}` (e.g., `v0.2.0`)
+- hatch-vcs derives the version at build time from the nearest tag
+- `local_scheme = "no-local-version"` ensures clean version strings on PyPI
 
 ## Code Style
 - Python 3.12+, ruff for linting and formatting
