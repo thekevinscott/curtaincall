@@ -6,6 +6,7 @@ import os
 import re
 import shlex
 import threading
+import time
 from typing import TYPE_CHECKING
 
 import pexpect
@@ -213,6 +214,42 @@ class Terminal:
             if row < scrollback_count:
                 return self._screen.history.top[row][col]
             return self._screen.buffer[row - scrollback_count][col]
+
+    # -- Process lifecycle --
+
+    @property
+    def is_alive(self) -> bool:
+        """Whether the child process is still running."""
+        if self._child is None:
+            return False
+        return self._child.isalive()
+
+    def wait(self, *, timeout: float = 10.0) -> int:
+        """Block until the child process exits and return its exit code.
+
+        Raises TimeoutError if the process doesn't exit within *timeout* seconds.
+        """
+        if self._child is None:
+            raise RuntimeError("Terminal has not been started")
+
+        deadline = time.monotonic() + timeout
+        while self._child.isalive():
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError(f"Process did not exit within {timeout}s")
+            time.sleep(min(0.05, remaining))
+
+        return self.exit_code
+
+    @property
+    def exit_code(self) -> int | None:
+        """The exit code of the child process, or None if still running."""
+        if self._child is None:
+            return None
+        if self._child.isalive():
+            return None
+        # pexpect stores the status after the process exits
+        return self._child.exitstatus
 
     # -- Terminal control --
 

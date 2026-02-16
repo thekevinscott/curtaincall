@@ -250,6 +250,67 @@ def describe_terminal_get_char_at():
         assert char.data == "0"
 
 
+def describe_terminal_is_alive():
+
+    def it_returns_false_when_no_child():
+        term = _make_terminal()
+        assert term.is_alive is False
+
+    def it_delegates_to_child_isalive():
+        term = _make_terminal()
+        term._child = MagicMock()
+        term._child.isalive.return_value = True
+        assert term.is_alive is True
+        term._child.isalive.return_value = False
+        assert term.is_alive is False
+
+
+def describe_terminal_exit_code():
+
+    def it_returns_none_when_no_child():
+        term = _make_terminal()
+        assert term.exit_code is None
+
+    def it_returns_none_when_still_alive():
+        term = _make_terminal()
+        term._child = MagicMock()
+        term._child.isalive.return_value = True
+        assert term.exit_code is None
+
+    def it_returns_exitstatus_when_dead():
+        term = _make_terminal()
+        term._child = MagicMock()
+        term._child.isalive.return_value = False
+        term._child.exitstatus = 42
+        assert term.exit_code == 42
+
+
+def describe_terminal_wait():
+
+    def it_returns_exit_code_when_already_dead():
+        term = _make_terminal()
+        term._child = MagicMock()
+        term._child.isalive.return_value = False
+        term._child.exitstatus = 0
+        assert term.wait(timeout=1.0) == 0
+
+    def it_raises_timeout_error():
+        term = _make_terminal()
+        term._child = MagicMock()
+        term._child.isalive.return_value = True
+        import pytest
+
+        with pytest.raises(TimeoutError, match="did not exit"):
+            term.wait(timeout=0.2)
+
+    def it_raises_runtime_error_without_start():
+        term = _make_terminal()
+        import pytest
+
+        with pytest.raises(RuntimeError, match="not been started"):
+            term.wait(timeout=0.1)
+
+
 def describe_terminal_set_size():
 
     def it_resizes_screen_and_pty():
