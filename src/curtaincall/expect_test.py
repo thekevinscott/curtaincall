@@ -289,6 +289,21 @@ def describe_terminal_assertions():
         assertions = TerminalAssertions(mock_terminal)
         assert assertions.to_match_snapshot() == "snapshot string"
 
+    def it_to_have_exited_passes_when_dead():
+        mock_terminal = MagicMock()
+        mock_terminal.is_alive = False
+        mock_terminal._get_screen_text.return_value = ""
+        assertions = TerminalAssertions(mock_terminal)
+        assertions.to_have_exited(timeout=0.5)
+
+    def it_to_have_exited_raises_when_alive():
+        mock_terminal = MagicMock()
+        mock_terminal.is_alive = True
+        mock_terminal._get_screen_text.return_value = ""
+        assertions = TerminalAssertions(mock_terminal)
+        with pytest.raises(AssertionError, match="Expected process to have exited"):
+            assertions.to_have_exited(timeout=0.2)
+
 
 def describe_expect_function():
 

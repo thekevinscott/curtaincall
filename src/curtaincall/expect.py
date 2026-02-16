@@ -170,6 +170,15 @@ class TerminalAssertions:
     def __init__(self, terminal: Terminal) -> None:
         self._terminal = terminal
 
+    def to_have_exited(self, *, timeout: float = 10.0) -> None:
+        """Assert that the terminal's process has exited."""
+        _poll(
+            check_fn=lambda: not self._terminal.is_alive,
+            timeout=timeout,
+            failure_message="Expected process to have exited",
+            screen_fn=self._terminal._get_screen_text,
+        )
+
     def to_match_snapshot(self) -> str:
         """Return the terminal snapshot for comparison."""
         return self._terminal.to_snapshot()
