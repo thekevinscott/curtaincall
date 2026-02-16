@@ -183,7 +183,8 @@ def describe_suppress_stderr():
         """With suppress_stderr=True, stderr output should not appear."""
         term = terminal(
             fixture_cmd("stderr_warning.py"),
-            rows=10, cols=60,
+            rows=10,
+            cols=60,
             suppress_stderr=True,
         )
         expect(term.get_by_text("STDERR_DONE")).to_be_visible()

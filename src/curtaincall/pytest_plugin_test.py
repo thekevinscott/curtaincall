@@ -17,7 +17,12 @@ def describe_terminal_factory():
         result = factory("my command")
 
         MockTerminal.assert_called_once_with(
-            "my command", rows=30, cols=80, env=None, history=1000, suppress_stderr=False,
+            "my command",
+            rows=30,
+            cols=80,
+            env=None,
+            history=1000,
+            suppress_stderr=False,
         )
         mock_term.start.assert_called_once()
         assert result is mock_term
@@ -33,7 +38,12 @@ def describe_terminal_factory():
         factory("cmd", rows=24, cols=120, env={"A": "B"})
 
         MockTerminal.assert_called_once_with(
-            "cmd", rows=24, cols=120, env={"A": "B"}, history=1000, suppress_stderr=False,
+            "cmd",
+            rows=24,
+            cols=120,
+            env={"A": "B"},
+            history=1000,
+            suppress_stderr=False,
         )
 
     @patch("curtaincall.pytest_plugin.Terminal")

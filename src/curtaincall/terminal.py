@@ -49,7 +49,9 @@ class Terminal:
         self._env = env
 
         self._screen: pyte.HistoryScreen = pyte.HistoryScreen(
-            cols, rows, history=history,
+            cols,
+            rows,
+            history=history,
         )
         self._stream = pyte.ByteStream(self._screen)
         self._child: pexpect.spawn | None = None
