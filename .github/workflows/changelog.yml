@@ -11,34 +11,62 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - name: Check for CHANGELOG.md update or skip-changelog trailer
+      - name: Check CHANGELOG.md and MIGRATIONS.md requirements
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
+          SKIP_CHANGELOG=0
+          BREAKING=0
           for sha in $(git rev-list "$BASE_SHA".."$HEAD_SHA"); do
-            if git log -1 --format=%B "$sha" | git interpret-trailers --parse | grep -qiE '^skip-changelog:[[:space:]]*true[[:space:]]*$'; then
-              echo "skip-changelog: true trailer found on commit $sha; bypassing check."
-              exit 0
+            trailers=$(git log -1 --format=%B "$sha" | git interpret-trailers --parse)
+            if echo "$trailers" | grep -qiE '^skip-changelog:[[:space:]]*true[[:space:]]*$'; then
+              SKIP_CHANGELOG=1
+            fi
+            if echo "$trailers" | grep -qiE '^breaking-change:[[:space:]]*true[[:space:]]*$'; then
+              BREAKING=1
             fi
           done
-          if git diff --name-only "$BASE_SHA" "$HEAD_SHA" | grep -qx 'CHANGELOG.md'; then
+
+          CHANGED_FILES=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+
+          # CHANGELOG.md requirement
+          if [ "$SKIP_CHANGELOG" = "1" ]; then
+            echo "Skip-Changelog: true trailer found; bypassing CHANGELOG.md requirement."
+          elif echo "$CHANGED_FILES" | grep -qx 'CHANGELOG.md'; then
             echo "CHANGELOG.md was updated."
-            exit 0
+          else
+            echo "::error::CHANGELOG.md was not updated in this PR."
+            echo ""
+            echo "Curtaincall is pre-1.0 and does not strictly follow SemVer, so every PR"
+            echo "must add an entry under the [Unreleased] heading in CHANGELOG.md."
+            echo ""
+            echo "If this PR has no consumer impact (pure CI, internal refactor with no"
+            echo "behavior change), add a 'Skip-Changelog: true' trailer to any commit"
+            echo "in this PR to bypass the check. Example:"
+            echo ""
+            echo "    chore: rename internal helper"
+            echo ""
+            echo "    Skip-Changelog: true"
+            exit 1
           fi
-          echo "::error::CHANGELOG.md was not updated in this PR."
-          echo ""
-          echo "Curtaincall is pre-1.0 and does not strictly follow SemVer, so every PR"
-          echo "must add an entry under the [Unreleased] heading in CHANGELOG.md."
-          echo ""
-          echo "If this PR has no consumer impact (pure CI, internal refactor with no"
-          echo "behavior change), add a 'Skip-Changelog: true' trailer to any commit"
-          echo "in this PR to bypass the check. Example:"
-          echo ""
-          echo "    chore: rename internal helper"
-          echo ""
-          echo "    Skip-Changelog: true"
-          echo ""
-          echo "Breaking changes and meaningful deprecations must also add an entry to"
-          echo "MIGRATIONS.md under ## Unreleased."
-          exit 1
+
+          # MIGRATIONS.md requirement, gated on Breaking-Change trailer
+          if [ "$BREAKING" = "1" ]; then
+            if echo "$CHANGED_FILES" | grep -qx 'MIGRATIONS.md'; then
+              echo "Breaking-Change: true trailer found and MIGRATIONS.md was updated."
+            else
+              echo "::error::A Breaking-Change: true trailer was found but MIGRATIONS.md was not updated."
+              echo ""
+              echo "Breaking changes and meaningful deprecations require an entry in"
+              echo "MIGRATIONS.md under ## Unreleased, with all five required sections:"
+              echo "Summary, Required changes, Deprecations removed, Behavior changes"
+              echo "without code changes, Verification. See MIGRATIONS.md for the template."
+              echo ""
+              echo "If this change is not actually breaking, remove the Breaking-Change"
+              echo "trailer from the commit(s) in this PR."
+              exit 1
+            fi
+          else
+            echo "No Breaking-Change trailer detected; MIGRATIONS.md update not required."
+          fi

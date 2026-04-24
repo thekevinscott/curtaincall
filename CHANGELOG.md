@@ -12,6 +12,7 @@ Breaking changes and meaningful deprecations must also add an entry to [MIGRATIO
 
 - `CHANGELOG.md` and `MIGRATIONS.md` at the repo root, with `MIGRATIONS.md` included in the docs site as the Migrations page.
 - CI check (`.github/workflows/changelog.yml`) requiring every PR to update `CHANGELOG.md`, with a `Skip-Changelog: true` git commit trailer as the escape hatch for PRs without consumer impact.
+- CI also enforces a `MIGRATIONS.md` diff when any commit in the PR carries a `Breaking-Change: true` trailer.
 - `AGENTS.md` is now the single source of agent / project conventions; `CLAUDE.md` is a thin `@AGENTS.md` include so both standards stay in sync.
 
 ### Changed

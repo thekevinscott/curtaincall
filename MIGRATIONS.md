@@ -4,7 +4,12 @@ Upgrade instructions for releases with breaking changes or meaningful deprecatio
 
 ## How to add an entry
 
-When a PR introduces a breaking change or removes a previously-deprecated feature, add a section under `## Unreleased` following the template below. When a release is cut, publish automation renames `Unreleased` to the new version heading.
+When a PR introduces a breaking change or removes a previously-deprecated feature:
+
+1. Add a section under `## Unreleased` following the template below.
+2. Add a `Breaking-Change: true` trailer to any commit in the PR. CI requires a `MIGRATIONS.md` diff whenever this trailer is present.
+
+When a release is cut, publish automation renames `Unreleased` to the new version heading.
 
 Each entry must include all five sections. If a section doesn't apply, write `_None._` rather than omitting the heading — this makes it obvious that the author considered it.
 

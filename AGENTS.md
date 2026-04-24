@@ -63,6 +63,12 @@ bd sync               # Sync with git
   Skip-Changelog: true
   ```
 - **Breaking changes and meaningful deprecations** must also add an entry to `MIGRATIONS.md` under `## Unreleased`, with the five required sections: Summary, Required changes, Deprecations removed, Behavior changes without code changes, Verification. See `MIGRATIONS.md` for the template
+- Signal a breaking change by adding a `Breaking-Change: true` trailer to any commit in the PR. When this trailer is present, CI requires a `MIGRATIONS.md` diff. Example:
+  ```
+  feat: rename terminal.run() to terminal.start()
+
+  Breaking-Change: true
+  ```
 - Release automation renames `## [Unreleased]` in `CHANGELOG.md` and `## Unreleased` in `MIGRATIONS.md` to the new version heading when a tag is cut
 - `MIGRATIONS.md` at repo root is the source of truth; it is included into the docs site via `docs/migrations.md`
 
