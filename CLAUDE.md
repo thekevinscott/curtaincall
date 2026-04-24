@@ -11,6 +11,12 @@
 - Don't add code that isn't used until a future PR
 - Every PR must include tests: integration tests for user-facing behavior, unit tests for internals
 
+### Changelog
+- **Every PR that changes public API must update `CHANGELOG.md`** under the `## [Unreleased]` heading, in the appropriate section (`Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`) per [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
+- Public API = anything re-exported from `src/curtaincall/__init__.py`, the pytest plugin contract (fixtures, hooks, markers, config options), and documented CLI/snapshot formats. Internal refactors don't need an entry
+- **Breaking changes** and meaningful deprecations must also add a migration entry with before/after code samples (migration guide location TBD)
+- Release automation moves `## [Unreleased]` entries under the new version heading when a tag is cut
+
 ## Project Structure
 - `src/curtaincall/` - Library source (terminal, locator, expect, types, ansi, snapshot, pytest_plugin)
 - `tests/integration/` - Integration tests using real PTY sessions
