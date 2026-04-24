@@ -1,0 +1,38 @@
+name: Changelog
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Check for CHANGELOG.md update
+        env:
+          LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if echo "$LABELS" | grep -q '"skip-changelog"'; then
+            echo "skip-changelog label present; bypassing check."
+            exit 0
+          fi
+          if git diff --name-only "$BASE_SHA" "$HEAD_SHA" | grep -qx 'CHANGELOG.md'; then
+            echo "CHANGELOG.md was updated."
+            exit 0
+          fi
+          echo "::error::CHANGELOG.md was not updated in this PR."
+          echo ""
+          echo "Curtaincall is pre-1.0 and does not strictly follow SemVer, so every PR"
+          echo "must add an entry under the [Unreleased] heading in CHANGELOG.md."
+          echo ""
+          echo "If this PR has no consumer impact (pure CI, internal refactor with no"
+          echo "behavior change), add the 'skip-changelog' label to bypass this check."
+          echo ""
+          echo "Breaking changes and meaningful deprecations must also add an entry to"
+          echo "MIGRATIONS.md under ## Unreleased."
+          exit 1

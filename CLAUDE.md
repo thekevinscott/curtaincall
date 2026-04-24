@@ -12,10 +12,11 @@
 - Every PR must include tests: integration tests for user-facing behavior, unit tests for internals
 
 ### Changelog
-- **Every PR that changes public API must update `CHANGELOG.md`** under the `## [Unreleased]` heading, in the appropriate section (`Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`) per [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
-- Public API = anything re-exported from `src/curtaincall/__init__.py`, the pytest plugin contract (fixtures, hooks, markers, config options), and documented CLI/snapshot formats. Internal refactors don't need an entry
-- **Breaking changes** and meaningful deprecations must also add a migration entry with before/after code samples (migration guide location TBD)
-- Release automation moves `## [Unreleased]` entries under the new version heading when a tag is cut
+- **Every PR must update `CHANGELOG.md`** under the `## [Unreleased]` heading, in the appropriate section (`Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`) per [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Scope is intentionally broad — curtaincall is pre-1.0 and does not strictly follow SemVer, so any change may be consumer-visible
+- Enforced in CI by `.github/workflows/changelog.yml`. A PR that genuinely has no consumer impact (pure CI, internal refactor with no behavior change) can add the `skip-changelog` label to bypass the check. Prefer writing an entry over using the label
+- **Breaking changes and meaningful deprecations** must also add an entry to `MIGRATIONS.md` under `## Unreleased`, with the five required sections: Summary, Required changes, Deprecations removed, Behavior changes without code changes, Verification. See `MIGRATIONS.md` for the template
+- Release automation renames `## [Unreleased]` in `CHANGELOG.md` and `## Unreleased` in `MIGRATIONS.md` to the new version heading when a tag is cut
+- `MIGRATIONS.md` at repo root is the source of truth; it is included into the docs site via `docs/migrations.md`
 
 ## Project Structure
 - `src/curtaincall/` - Library source (terminal, locator, expect, types, ansi, snapshot, pytest_plugin)

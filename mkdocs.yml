@@ -24,6 +24,7 @@ theme:
 
 plugins:
   - search
+  - include-markdown
   - mkdocstrings:
       handlers:
         python:
@@ -55,3 +56,4 @@ nav:
       - Locator: api/locator.md
       - expect: api/expect.md
       - Types: api/types.md
+  - Migrations: migrations.md
