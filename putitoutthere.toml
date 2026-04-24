@@ -1,0 +1,16 @@
+# Put It Out There — release orchestration config.
+# Docs: https://github.com/thekevinscott/put-it-out-there
+
+[putitoutthere]
+version = 1
+cadence = "scheduled"
+
+[[package]]
+name       = "curtaincall"
+kind       = "pypi"
+path       = "."
+paths      = ["src/**", "pyproject.toml"]
+tag_format = "v{version}"
+
+[package.trust_policy]
+workflow = "release.yml"
