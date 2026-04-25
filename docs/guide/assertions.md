@@ -1,5 +1,7 @@
 # Assertions
 
+> Published version: [thekevinscott.github.io/curtaincall/guide/assertions/](https://thekevinscott.github.io/curtaincall/guide/assertions/)
+
 Curtaincall's `expect()` function provides assertions with automatic polling.
 
 ## Visibility

@@ -17,6 +17,8 @@ Breaking changes and meaningful deprecations must also add an entry to [MIGRATIO
 
 ### Changed
 
+- Documentation restructured into three levels with clear roles: `README.md` (concise overview that mirrors the `docs/` structure as `##` headings), `docs/` (full markdown that ships inside the installed package at `curtaincall/docs/` so agents can read it without network access), and the published mkdocs site (1:1 with `docs/`). Each `docs/` page now links to its published URL at the top, and each `README.md` section links to the corresponding `docs/` page.
+- Wheel build now force-includes `docs/` under `curtaincall/docs/`; sdist now declares an explicit `include` list covering source, tests, docs, and project metadata files.
 - Release orchestration migrated to [putitoutthere](https://github.com/thekevinscott/put-it-out-there). The legacy `publish.yml` / `patch-release.yml` / `minor-release.yml` workflows are replaced by a single `release.yml` driven by `putitoutthere.toml`. Releases now ship on every merge to main that touches `src/**` or `pyproject.toml` (`cadence = "immediate"`), instead of on a nightly cron. Preserved: trusted PyPI publishing, GitHub Release per tag, `v{version}` tag format. Minor/major bumps are signaled by a `release: minor|major` git commit trailer; `release: skip` suppresses an otherwise-cascading patch. Tag rollback on publish failure is no longer automatic.
 
 ### Deprecated
