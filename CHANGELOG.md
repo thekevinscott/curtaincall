@@ -17,6 +17,8 @@ Breaking changes and meaningful deprecations must also add an entry to [MIGRATIO
 
 ### Changed
 
+- Release orchestration migrated to [putitoutthere](https://github.com/thekevinscott/put-it-out-there). The legacy `publish.yml` / `patch-release.yml` / `minor-release.yml` workflows are replaced by a single `release.yml` driven by `putitoutthere.toml`. Behavior preserved: nightly 2am UTC patch cron, trusted publishing to PyPI, GitHub Release per tag, `v{version}` tag format. Behavior changed: minor/major bumps are now signaled by a `release: minor|major` git commit trailer instead of a separate manually-dispatched workflow; tag rollback on publish failure is no longer automatic.
+
 ### Deprecated
 
 ### Removed

@@ -127,11 +127,15 @@ uv run just ci              # Full local CI (lint + format + unit tests)
 - **Do NOT hardcode version** in `pyproject.toml` -- it uses `dynamic = ["version"]`
 
 ### Cutting a Release
-- **Patch** (bug fixes): runs nightly at 2am UTC automatically, or trigger manually: `gh workflow run "Patch Release (Nightly)"`
-- **Minor** (new features): trigger manually: `gh workflow run "Minor Release"`
-- **Major**: create and push a tag manually: `git tag -a v2.0.0 -m "Release v2.0.0" && git push origin v2.0.0`
+Releases are orchestrated by [putitoutthere](https://github.com/thekevinscott/put-it-out-there) via `.github/workflows/release.yml`. Configuration lives in `putitoutthere.toml` at the repo root (`cadence = "scheduled"`, `tag_format = "v{version}"`).
 
-The publish workflow (`publish.yml`) handles: tag creation -> `uv build` -> PyPI publish (trusted publishing) -> GitHub Release with auto-generated notes. On failure, it rolls back the tag.
+- **Patch** (bug fixes): runs nightly at 2am UTC automatically. If commits touched any path tracked in `putitoutthere.toml` since the last tag, a patch ships. To trigger manually: `gh workflow run "Release (scheduled)"`
+- **Minor** / **Major**: add a `release: minor` or `release: major` trailer to a commit on main, then either wait for the nightly run or trigger the workflow manually
+- **Skip**: add `release: skip` to a commit body to suppress an otherwise-cascading patch release
+
+The release workflow handles: build sdist (with `SETUPTOOLS_SCM_PRETEND_VERSION_FOR_CURTAINCALL` set so hatch-vcs sees the planned version) -> tag -> PyPI publish (trusted publishing) -> GitHub Release with notes derived from `git log` subjects between tags.
+
+**Known limitation:** piot does not roll back the git tag on a failed publish. If the publish step fails after the tag is pushed, delete the tag manually: `git push --delete origin vX.Y.Z`.
 
 ### Version Scheme
 - Tags follow `v{major}.{minor}.{patch}` (e.g., `v0.2.0`)

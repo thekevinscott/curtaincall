@@ -1,0 +1,99 @@
+name: Release (scheduled)
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry-run: compute plan, skip publish + tag'
+        type: boolean
+        default: false
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: plan
+        uses: thekevinscott/put-it-out-there@v0
+        with:
+          command: plan
+
+  build:
+    needs: plan
+    if: fromJSON(needs.plan.outputs.matrix || '[]')[0] != null
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    runs-on: ${{ matrix.runs_on }}
+    # hatch-vcs derives the version from the nearest git tag at build time, but
+    # piot does not create the tag until the publish job. Without this handoff
+    # the sdist would ship as e.g. 0.5.1.devN. See:
+    # https://github.com/thekevinscott/put-it-out-there/blob/main/docs/guide/dynamic-versions.md
+    env:
+      SETUPTOOLS_SCM_PRETEND_VERSION_FOR_CURTAINCALL: ${{ matrix.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Python
+        if: matrix.kind == 'pypi'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build sdist
+        if: matrix.kind == 'pypi' && matrix.build != 'maturin' && matrix.target == 'sdist'
+        run: |
+          cd ${{ matrix.path }}
+          python -m pip install build
+          python -m build --sdist --outdir dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_path }}
+
+  publish:
+    needs: [plan, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # PyPI publish shells out to `twine`. Hosted runners don't ship it;
+      # install it here so the publish job has twine on PATH.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install twine
+        run: pip install twine
+      # piot cuts an annotated tag per publish (`git tag -a`). Hosted
+      # runners have no committer identity set; configure one before the
+      # piot step or tag creation fails with "Please tell me who you are."
+      - name: Configure git identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - uses: thekevinscott/put-it-out-there@v0
+        with:
+          command: publish
+          dry_run: ${{ inputs.dry_run || 'false' }}
