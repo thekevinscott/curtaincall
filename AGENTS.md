@@ -127,10 +127,10 @@ uv run just ci              # Full local CI (lint + format + unit tests)
 - **Do NOT hardcode version** in `pyproject.toml` -- it uses `dynamic = ["version"]`
 
 ### Cutting a Release
-Releases are orchestrated by [putitoutthere](https://github.com/thekevinscott/put-it-out-there) via `.github/workflows/release.yml`. Configuration lives in `putitoutthere.toml` at the repo root (`cadence = "scheduled"`, `tag_format = "v{version}"`).
+Releases are orchestrated by [putitoutthere](https://github.com/thekevinscott/put-it-out-there) via `.github/workflows/release.yml`. Configuration lives in `putitoutthere.toml` at the repo root (`cadence = "immediate"`, `tag_format = "v{version}"`).
 
-- **Patch** (bug fixes): runs nightly at 2am UTC automatically. If commits touched any path tracked in `putitoutthere.toml` since the last tag, a patch ships. To trigger manually: `gh workflow run "Release (scheduled)"`
-- **Minor** / **Major**: add a `release: minor` or `release: major` trailer to a commit on main, then either wait for the nightly run or trigger the workflow manually
+- **Patch** (bug fixes): ships automatically on every merge to main that touches a path tracked in `putitoutthere.toml` (currently `src/**`, `pyproject.toml`). Docs / tests / CI-only merges do not cascade. To trigger manually: `gh workflow run "Release"`
+- **Minor** / **Major**: add a `release: minor` or `release: major` trailer to a commit on main
 - **Skip**: add `release: skip` to a commit body to suppress an otherwise-cascading patch release
 
 The release workflow handles: build sdist (with `SETUPTOOLS_SCM_PRETEND_VERSION_FOR_CURTAINCALL` set so hatch-vcs sees the planned version) -> tag -> PyPI publish (trusted publishing) -> GitHub Release with notes derived from `git log` subjects between tags.

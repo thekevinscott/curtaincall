@@ -3,7 +3,7 @@
 
 [putitoutthere]
 version = 1
-cadence = "scheduled"
+cadence = "immediate"
 
 [[package]]
 name       = "curtaincall"
