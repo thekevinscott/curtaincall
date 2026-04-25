@@ -1,5 +1,7 @@
 # Fixtures
 
+> Published version: [thekevinscott.github.io/curtaincall/guide/fixtures/](https://thekevinscott.github.io/curtaincall/guide/fixtures/)
+
 ## The terminal Fixture
 
 The `terminal` fixture is a factory function that creates isolated PTY sessions. It's automatically available when curtaincall is installed.

@@ -1,5 +1,7 @@
 # Snapshots
 
+> Published version: [thekevinscott.github.io/curtaincall/guide/snapshots/](https://thekevinscott.github.io/curtaincall/guide/snapshots/)
+
 Curtaincall can serialize the terminal screen as a box-drawn string for snapshot testing.
 
 ## Basic Usage

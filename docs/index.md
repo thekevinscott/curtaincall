@@ -1,5 +1,7 @@
 # Curtaincall
 
+> Published version: [thekevinscott.github.io/curtaincall](https://thekevinscott.github.io/curtaincall/)
+
 Testing library for terminal applications.
 
 Curtaincall is a pytest plugin for testing terminal (TUI) applications. It spawns real PTY sessions, emulates a VT100 terminal, and provides an expressive assertion API with auto-waiting locators.

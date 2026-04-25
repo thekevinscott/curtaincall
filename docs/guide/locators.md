@@ -1,5 +1,7 @@
 # Locators
 
+> Published version: [thekevinscott.github.io/curtaincall/guide/locators/](https://thekevinscott.github.io/curtaincall/guide/locators/)
+
 Locators find text on the terminal screen. They are lazy -- the screen isn't searched until the locator is used.
 
 ## String Matching

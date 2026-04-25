@@ -4,7 +4,7 @@ Testing library for terminal applications.
 
 Curtaincall is a pytest plugin for testing terminal (TUI) applications. It spawns real PTY sessions, emulates a VT100 terminal, and provides an expressive assertion API with auto-waiting locators. Inspired by Microsoft's [tui-test](https://github.com/microsoft/tui-test).
 
-**[Full documentation](https://thekevinscott.github.io/curtaincall/)**
+The `docs/` folder ships with the package — this README mirrors its structure. Each section here is a short summary that links to a full page in `docs/`. Published version: [thekevinscott.github.io/curtaincall](https://thekevinscott.github.io/curtaincall/).
 
 ## Installation
 
@@ -12,9 +12,15 @@ Curtaincall is a pytest plugin for testing terminal (TUI) applications. It spawn
 pip install curtaincall
 ```
 
-The `terminal` fixture is automatically available when curtaincall is installed -- no imports or configuration needed.
+Curtaincall registers itself as a pytest plugin automatically. The `terminal` fixture is available in any test file without imports.
 
-## Quick Example
+Requirements: Python 3.12+, Linux or macOS (Unix PTYs).
+
+## Motivation
+
+TUI applications are typically tested by mocking stdin/stdout, which doesn't catch real terminal behavior: cursor positioning, color codes, redraws, signal handling, scrollback. Curtaincall runs your CLI in a real PTY and emulates a VT100 terminal, so tests assert against what a user would actually see.
+
+## Quick Start
 
 ```python
 from curtaincall import expect
@@ -29,294 +35,48 @@ def test_interactive_cli(terminal):
     expect(term.get_by_text("Hello!")).to_be_visible()
 ```
 
-## How It Works
+## Guide
 
-1. `terminal("python my_cli.py")` spawns the command in a real pseudo-terminal (PTY) via [pexpect](https://github.com/pexpect/pexpect)
-2. A background thread reads PTY output and feeds it through a VT100 emulator ([pyte](https://github.com/selectel/pyte))
-3. `get_by_text("...")` creates a lazy locator that searches the emulated screen
-4. `expect(...).to_be_visible()` polls the screen until the text appears or times out
+### Getting Started
 
-Tests automatically wait for output to appear -- no `time.sleep()` needed.
+Install, write your first test, and learn how PTY spawning + VT100 emulation drive auto-waiting assertions. → [docs/guide/getting-started.md](docs/guide/getting-started.md)
 
-## Features
+### Terminal
 
-### Auto-waiting Assertions
-
-Every assertion polls the terminal screen with a configurable timeout (default 5 seconds). When an assertion times out, the error includes the current screen content for debugging.
-
-```python
-from curtaincall import expect
-
-# Wait for text to appear
-expect(term.get_by_text("Ready")).to_be_visible()
-
-# Wait for text to disappear (spinner finished, loading complete)
-expect(term.get_by_text("Loading")).not_to_be_visible()
-
-# Custom timeout for slow operations
-expect(term.get_by_text("Done")).to_be_visible(timeout=30.0)
-```
-
-Failure output:
-
-```
-AssertionError: Expected text to be visible: 'MISSING'
-
-Screen content:
-$ python my_app.py
-Hello, World!
-$
-```
+The `Terminal` class manages a child process running in a pseudo-terminal. Read the screen, inspect the cursor, resize, and clean up. → [docs/guide/terminal.md](docs/guide/terminal.md)
 
 ### Locators
 
-Locators find text on the terminal screen. They are lazy -- the screen isn't searched until the locator is used.
+`get_by_text()` returns a lazy locator that finds text on the screen by substring, full-line, or regex match. → [docs/guide/locators.md](docs/guide/locators.md)
 
-```python
-import re
+### Assertions
 
-# Substring match (default)
-term.get_by_text("Hello")
+`expect(locator).to_be_visible()` polls until the condition holds. Also covers color and text-content assertions, with screen content in failure messages. → [docs/guide/assertions.md](docs/guide/assertions.md)
 
-# Full line match (stripped line must equal the text exactly)
-term.get_by_text("Hello, World!", full=True)
+### Snapshots
 
-# Regex match
-term.get_by_text(re.compile(r"version \d+\.\d+"))
+`term.to_snapshot()` serializes the screen as a box-drawn string, suitable for snapshot testing with [syrupy](https://github.com/toptal/syrupy). → [docs/guide/snapshots.md](docs/guide/snapshots.md)
 
-# Regex with full line match
-term.get_by_text(re.compile(r"Hello, \w+!"), full=True)
-```
+### Input
 
-Locator properties:
+Send text, arrow keys, special keys, and control sequences (`Ctrl+C`, `Ctrl+D`, etc.) to the terminal. → [docs/guide/input.md](docs/guide/input.md)
 
-```python
-locator = term.get_by_text("Hello")
-locator.is_visible()   # bool -- instant check, no waiting
-locator.cells          # list[CellMatch] -- matched cell positions
-locator.text()         # str -- the matched text content
-```
+### Fixtures
 
-### Color Assertions
+The `terminal` fixture is a factory: `terminal(command, rows=30, cols=80, env=None)`. Multiple terminals per test are supported; cleanup is automatic. → [docs/guide/fixtures.md](docs/guide/fixtures.md)
 
-Verify foreground and background colors of terminal text. Supports standard terminal color names.
+## API Reference
 
-```python
-expect(term.get_by_text("ERROR")).to_have_fg_color("red")
-expect(term.get_by_text("OK")).to_have_fg_color("green")
-expect(term.get_by_text("HIGHLIGHT")).to_have_bg_color("blue")
-```
+Generated reference for the public API. → [docs/api/](docs/api/)
 
-Supported colors: `red`, `green`, `blue`, `yellow`, `cyan`, `magenta`, `white`, `black`, `default`.
+- `Terminal` — [docs/api/terminal.md](docs/api/terminal.md)
+- `Locator` — [docs/api/locator.md](docs/api/locator.md)
+- `expect` — [docs/api/expect.md](docs/api/expect.md)
+- Types — [docs/api/types.md](docs/api/types.md)
 
-### Text Content Assertions
+## Migrations
 
-```python
-expect(term.get_by_text("Hello, World!")).to_contain_text("World")
-```
-
-### Keyboard Input
-
-Send text, arrow keys, and control sequences to the terminal.
-
-```python
-# Text input
-term.write("raw text")           # send raw text
-term.submit("text + enter")      # send text followed by Enter
-
-# Arrow keys
-term.key_up()
-term.key_down()
-term.key_left()
-term.key_right()
-
-# Special keys
-term.key_enter()
-term.key_backspace()
-term.key_delete()
-term.key_tab()
-term.key_escape()
-
-# Control keys
-term.key_ctrl_c()    # send SIGINT
-term.key_ctrl_d()    # send EOF
-```
-
-### Terminal Resize
-
-Test SIGWINCH handling by resizing the PTY mid-test. Both the PTY and the internal VT100 emulator are resized together.
-
-```python
-def test_resize(terminal):
-    term = terminal("python my_app.py", rows=24, cols=80)
-    expect(term.get_by_text("80x24")).to_be_visible()
-    term.set_size(rows=40, cols=120)
-    expect(term.get_by_text("120x40")).to_be_visible()
-```
-
-### Snapshot Testing
-
-Serialize the terminal screen as a box-drawn string for snapshot regression testing.
-
-```python
-def test_table_output(terminal):
-    term = terminal("python my_app.py", rows=10, cols=40)
-    expect(term.get_by_text("Results")).to_be_visible()
-    snapshot = term.to_snapshot()
-```
-
-Output format:
-
-```
-╭──────────────────────────────────────╮
-│$ python my_app.py                    │
-│Results                               │
-│                                      │
-╰──────────────────────────────────────╯
-```
-
-Pair with [syrupy](https://github.com/toptal/syrupy) for automatic snapshot management:
-
-```python
-def test_table_output(terminal, snapshot):
-    term = terminal("python my_app.py", rows=10, cols=40)
-    expect(term.get_by_text("Results")).to_be_visible()
-    assert term.to_snapshot() == snapshot
-```
-
-Update snapshots with `pytest --snapshot-update`.
-
-### Scrollback Buffer
-
-Locators search the full buffer -- both the visible viewport and lines that have scrolled off the top. This is important when stderr warnings or verbose output push your content off-screen.
-
-```python
-# Even if warnings fill the viewport, stdout content is found in scrollback
-term = terminal("python -m my_module --help", rows=10, cols=80)
-expect(term.get_by_text("Usage:")).to_be_visible()  # searches scrollback too
-```
-
-Control scrollback depth with the `history` parameter (default 1000 lines):
-
-```python
-term = terminal("my_command", history=5000)  # large scrollback
-```
-
-### Screen Inspection
-
-```python
-# Full buffer (scrollback + viewport) as 2D list of characters
-buffer = term.get_buffer()         # list[list[str]]
-
-# Visible viewport only (no scrollback)
-viewable = term.get_viewable_buffer()
-
-# Cursor position
-cursor = term.get_cursor()         # CursorPosition(x=0, y=5)
-```
-
-## The `terminal` Fixture
-
-The `terminal` fixture is a factory function that creates isolated PTY sessions.
-
-```python
-def test_example(terminal):
-    # Default: 30 rows, 80 columns
-    term = terminal("python my_app.py")
-
-    # Custom dimensions
-    term = terminal("python my_app.py", rows=24, cols=120)
-
-    # Custom environment variables
-    term = terminal("python my_app.py", env={"DEBUG": "1"})
-```
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `command` | `str` | required | Shell command to run |
-| `rows` | `int` | `30` | Terminal height |
-| `cols` | `int` | `80` | Terminal width |
-| `env` | `dict` | `None` | Extra environment variables |
-| `history` | `int` | `1000` | Scrollback buffer depth (lines) |
-| `suppress_stderr` | `bool` | `False` | Redirect stderr to `/dev/null` |
-
-### Multiple Terminals
-
-Create multiple terminals in a single test:
-
-```python
-def test_client_server(terminal):
-    server = terminal("python server.py")
-    client = terminal("python client.py")
-    expect(server.get_by_text("Listening")).to_be_visible()
-    expect(client.get_by_text("Connected")).to_be_visible()
-```
-
-### Cleanup
-
-All terminals are automatically killed when the test ends. Long-running processes are force-terminated.
-
-## Example: Menu Navigation
-
-```python
-from curtaincall import expect
-
-def test_arrow_menu(terminal):
-    term = terminal("python menu.py")
-    expect(term.get_by_text("Select an option:")).to_be_visible()
-
-    term.key_down()
-    term.key_down()
-    term.key_enter()
-
-    expect(term.get_by_text("Option C")).to_be_visible()
-```
-
-## Example: Signal Handling
-
-```python
-from curtaincall import expect
-
-def test_ctrl_c(terminal):
-    term = terminal("python server.py")
-    expect(term.get_by_text("Running")).to_be_visible()
-
-    term.key_ctrl_c()
-
-    expect(term.get_by_text("Cleanup complete")).to_be_visible()
-```
-
-## Stderr and PTY Behavior
-
-PTYs merge stdout and stderr into a single stream. This means warnings or log messages on stderr share the terminal screen with your application's stdout. If stderr is verbose, it can push stdout content off the visible viewport.
-
-Curtaincall handles this in two ways:
-
-1. **Scrollback buffer** (default): `get_by_text()` searches the full buffer including content scrolled off-screen. This is automatic -- no configuration needed.
-
-2. **`suppress_stderr`**: When you don't need stderr at all, suppress it entirely:
-
-```python
-term = terminal("python -m my_module --help", suppress_stderr=True)
-expect(term.get_by_text("Usage:")).to_be_visible()
-```
-
-This wraps the command in `bash -c '... 2>/dev/null'`, redirecting stderr before it reaches the PTY.
-
-**Recommendation**: Prefer using installed entry points (`my-tool --help`) over `python -m` invocation when possible, as the latter is more likely to produce import warnings.
-
-## Requirements
-
-- Python 3.12+
-- Linux or macOS (requires Unix PTYs)
-
-## Dependencies
-
-Runtime: [pexpect](https://github.com/pexpect/pexpect), [pyte](https://github.com/selectel/pyte)
-
-## Documentation
-
-Full documentation at [thekevinscott.github.io/curtaincall](https://thekevinscott.github.io/curtaincall/).
+Upgrade instructions for releases with breaking changes or meaningful deprecations. → [MIGRATIONS.md](MIGRATIONS.md)
 
 ## License
 

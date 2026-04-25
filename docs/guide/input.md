@@ -1,5 +1,7 @@
 # Input
 
+> Published version: [thekevinscott.github.io/curtaincall/guide/input/](https://thekevinscott.github.io/curtaincall/guide/input/)
+
 Curtaincall provides methods for sending text and keyboard input to the terminal.
 
 ## Text Input

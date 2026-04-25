@@ -1,5 +1,7 @@
 # Terminal
 
+> Published version: [thekevinscott.github.io/curtaincall/guide/terminal/](https://thekevinscott.github.io/curtaincall/guide/terminal/)
+
 The `Terminal` class manages a child process running in a pseudo-terminal with VT100 emulation.
 
 ## Creating Terminals

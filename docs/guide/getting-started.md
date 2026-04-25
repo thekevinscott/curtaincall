@@ -1,5 +1,7 @@
 # Getting Started
 
+> Published version: [thekevinscott.github.io/curtaincall/guide/getting-started/](https://thekevinscott.github.io/curtaincall/guide/getting-started/)
+
 ## Installation
 
 ```bash
