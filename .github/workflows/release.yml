@@ -97,5 +97,3 @@ jobs:
         with:
           command: publish
           dry_run: ${{ inputs.dry_run || 'false' }}
-        env:
-          PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
