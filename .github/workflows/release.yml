@@ -24,7 +24,7 @@ jobs:
     outputs:
       matrix: ${{ steps.plan.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - id: plan
@@ -47,7 +47,7 @@ jobs:
     env:
       SETUPTOOLS_SCM_PRETEND_VERSION_FOR_CURTAINCALL: ${{ matrix.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Setup Python
@@ -73,7 +73,7 @@ jobs:
       contents: write
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       # PyPI publish shells out to `twine`. Hosted runners don't ship it;
