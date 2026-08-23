@@ -52,7 +52,7 @@ jobs:
           fetch-depth: 0
       - name: Setup Python
         if: matrix.kind == 'pypi'
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - name: Build sdist
@@ -78,7 +78,7 @@ jobs:
           fetch-depth: 0
       # PyPI publish shells out to `twine`. Hosted runners don't ship it;
       # install it here so the publish job has twine on PATH.
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - name: Install twine
