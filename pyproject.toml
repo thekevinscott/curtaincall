@@ -57,7 +57,6 @@ include = [
     "CHANGELOG.md",
     "MIGRATIONS.md",
     "AGENTS.md",
-    "CLAUDE.md",
     "justfile",
     "mkdocs.yml",
     "putitoutthere.toml",
