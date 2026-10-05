@@ -164,3 +164,5 @@ The release workflow handles: build sdist (with `SETUPTOOLS_SCM_PRETEND_VERSION_
 | `refactor:` | Code restructuring without behavior change |
 | `docs:` | Documentation only |
 | `style:` | Formatting changes |
+
+@notes/session-handoff.md
