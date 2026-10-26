@@ -1,0 +1,11 @@
+name: putitoutthere check
+
+# Validates putitoutthere.toml against the release engine's current schema and
+# pyproject.toml on every PR, so a config the engine rejects fails here instead
+# of on the push to main.
+on:
+  pull_request: {}
+
+jobs:
+  putitoutthere-check:
+    uses: thekevinscott/putitoutthere/.github/workflows/check.yml@v0

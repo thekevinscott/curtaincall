@@ -152,15 +152,14 @@ uv run just ci              # Full local CI (lint + format + unit tests)
 - **Do NOT hardcode version** in `pyproject.toml` -- it uses `dynamic = ["version"]`
 
 ### Cutting a Release
-Releases are orchestrated by [putitoutthere](https://github.com/thekevinscott/put-it-out-there) via `.github/workflows/release.yml`. Configuration lives in `putitoutthere.toml` at the repo root (`cadence = "immediate"`, `tag_format = "v{version}"`).
+Releases are orchestrated by [putitoutthere](https://github.com/thekevinscott/putitoutthere): `.github/workflows/release.yml` calls its reusable `release.yml@v0` workflow. Configuration lives in `putitoutthere.toml` at the repo root (`build = "hatch"`, `tag_format = "v{version}"`). `.github/workflows/putitoutthere-check.yml` validates that config against the engine's current schema on every PR; preview a release locally with `npx putitoutthere plan`.
 
-- **Patch** (bug fixes): ships automatically on every merge to main that touches a path tracked in `putitoutthere.toml` (currently `src/**`, `pyproject.toml`). Docs / tests / CI-only merges do not cascade. To trigger manually: `gh workflow run "Release"`
+- **Patch** (bug fixes): ships automatically on every merge to main that touches a path in the config's `globs` (currently `src/**`, `pyproject.toml`). Docs / tests / CI-only merges do not cascade
 - **Minor** / **Major**: add a `release: minor` or `release: major` trailer to a commit on main
 - **Skip**: add `release: skip` to a commit body to suppress an otherwise-cascading patch release
+- **Manual** (e.g. re-release after a pipeline fix, or pick the bump yourself): `gh workflow run Release -f release_packages=curtaincall@minor` (`@patch`, `@major`, or an explicit `@X.Y.Z` also work)
 
-The release workflow handles: build sdist (with `SETUPTOOLS_SCM_PRETEND_VERSION_FOR_CURTAINCALL` set so hatch-vcs sees the planned version) -> tag -> PyPI publish (trusted publishing) -> GitHub Release with notes derived from `git log` subjects between tags.
-
-**Known limitation:** piot does not roll back the git tag on a failed publish. If the publish step fails after the tag is pushed, delete the tag manually: `git push --delete origin vX.Y.Z`.
+The release workflow handles: build sdist + wheel (the reusable workflow sets `SETUPTOOLS_SCM_PRETEND_VERSION` so hatch-vcs sees the planned version) -> PyPI publish via trusted publishing in this repo's `pypi-publish` job (PyPI can't validate OIDC tokens from a cross-repo reusable workflow) -> `pypi-tag` cuts the git tag and GitHub Release only after the upload lands, so a failed publish leaves no tag behind.
 
 ### Version Scheme
 - Tags follow `v{major}.{minor}.{patch}` (e.g., `v0.2.0`)
