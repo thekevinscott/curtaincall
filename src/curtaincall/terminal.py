@@ -137,6 +137,21 @@ class Terminal:
     def key_ctrl_d(self) -> None:
         self.write(ansi.CTRL_D)
 
+    def click(self, row: int, col: int) -> None:
+        """Left-click a viewport cell by sending an SGR mouse press then release.
+
+        ``row`` and ``col`` are 0-based viewport coordinates (the same convention
+        as ``get_cursor()``). The program under test must have enabled mouse
+        tracking (e.g. ``\\x1b[?1000h\\x1b[?1006h``) to receive the events.
+        """
+        if not (0 <= row < self._rows and 0 <= col < self._cols):
+            raise ValueError(
+                f"Cell ({row}, {col}) is outside the {self._rows}x{self._cols} viewport"
+            )
+        # SGR coordinates are 1-based, column first
+        at = f"{col + 1};{row + 1}"
+        self.write(f"\x1b[<0;{at}M\x1b[<0;{at}m")
+
     # -- Query methods --
 
     def get_by_text(
@@ -202,6 +217,11 @@ class Terminal:
                     row.append(char.data if char.data else " ")
                 result.append(row)
             return result
+
+    def _scrollback_len(self) -> int:
+        """Number of scrollback rows preceding the viewport in ``get_buffer()``."""
+        with self._lock:
+            return len(self._screen.history.top)
 
     def _get_char_at(self, row: int, col: int) -> pyte.screens.Char:
         """Get the Char at a position in the full buffer coordinate system.

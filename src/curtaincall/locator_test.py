@@ -3,6 +3,8 @@
 import re
 from unittest.mock import MagicMock
 
+import pytest
+
 from curtaincall.locator import Locator
 
 
@@ -14,6 +16,7 @@ def _mock_terminal(lines: list[str], cols: int = 80) -> MagicMock:
         row = list(line.ljust(cols))
         buffer.append(row)
     term.get_buffer.return_value = buffer
+    term._scrollback_len.return_value = 0
     return term
 
 
@@ -107,3 +110,36 @@ def describe_locator_regex_match():
         term = _mock_terminal(["Hello, World!"])
         loc = Locator(term, re.compile(r"NOPE"))
         assert loc.text() == ""
+
+
+def describe_locator_click():
+
+    def it_clicks_the_first_matched_cell():
+        term = _mock_terminal(["", "  [ OK ]  [ OK ]"])
+        Locator(term, "OK").click()
+        term.click.assert_called_once_with(1, 4)
+
+    def it_converts_buffer_rows_to_viewport_rows():
+        term = _mock_terminal(["old", "old", "Save"])
+        term._scrollback_len.return_value = 2
+        Locator(term, "Save").click()
+        term.click.assert_called_once_with(0, 0)
+
+    def it_skips_matches_in_scrollback():
+        term = _mock_terminal(["Save old", "", "Save new"])
+        term._scrollback_len.return_value = 1
+        Locator(term, "Save").click()
+        term.click.assert_called_once_with(1, 0)
+
+    def it_raises_when_text_is_not_on_screen():
+        term = _mock_terminal(["Hello"])
+        with pytest.raises(LookupError, match="'Save': text is not on screen"):
+            Locator(term, "Save").click()
+        term.click.assert_not_called()
+
+    def it_raises_when_text_has_scrolled_out_of_the_viewport():
+        term = _mock_terminal(["Save", "Hello"])
+        term._scrollback_len.return_value = 1
+        with pytest.raises(LookupError, match="has scrolled out of the viewport"):
+            Locator(term, "Save").click()
+        term.click.assert_not_called()

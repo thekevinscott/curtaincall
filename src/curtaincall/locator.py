@@ -82,6 +82,23 @@ class Locator:
         """Check if the text is currently visible on screen (no waiting)."""
         return len(self.cells) > 0
 
+    def click(self) -> None:
+        """Left-click the first matched cell in the viewport.
+
+        Doesn't wait: assert ``expect(locator).to_be_visible()`` first if the
+        text may not have rendered yet. Raises LookupError if no match is in
+        the viewport (matches that have scrolled into scrollback can't be clicked).
+        """
+        with self._terminal._lock:
+            cells = self.cells
+            scrollback = self._terminal._scrollback_len()
+        visible = [c for c in cells if c.row >= scrollback]
+        if not visible:
+            where = "has scrolled out of the viewport" if cells else "is not on screen"
+            raise LookupError(f"Cannot click {self._text!r}: text {where}")
+        cell = visible[0]
+        self._terminal.click(cell.row - scrollback, cell.col)
+
     def text(self) -> str:
         """Return the matched text content."""
         if isinstance(self._text, re.Pattern):

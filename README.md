@@ -59,7 +59,7 @@ The `Terminal` class manages a child process running in a pseudo-terminal. Read 
 
 ### Input
 
-Send text, arrow keys, special keys, and control sequences (`Ctrl+C`, `Ctrl+D`, etc.) to the terminal. → [docs/guide/input.md](docs/guide/input.md)
+Send text, arrow keys, special keys, control sequences (`Ctrl+C`, `Ctrl+D`, etc.), and mouse clicks to the terminal. → [docs/guide/input.md](docs/guide/input.md)
 
 ### Fixtures
 
