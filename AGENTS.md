@@ -168,7 +168,7 @@ The release workflow handles: build sdist (with `SETUPTOOLS_SCM_PRETEND_VERSION_
 - `local_scheme = "no-local-version"` ensures clean version strings on PyPI
 
 ## Code Style
-- Python 3.12+, ruff for linting and formatting
+- Python 3.10+, ruff for linting and formatting
 - `line-length = 100`
 - Skip redundant `Args:`/`Returns:` docstring sections - use type hints
 - Test fixtures (programs in `tests/fixtures/`) use only stdlib - no Rich, no external deps

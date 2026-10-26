@@ -14,7 +14,7 @@ pip install curtaincall
 
 Curtaincall registers itself as a pytest plugin automatically. The `terminal` fixture is available in any test file without imports.
 
-Requirements: Python 3.12+, Linux or macOS (Unix PTYs).
+Requirements: Python 3.10+, Linux or macOS (Unix PTYs).
 
 ## Motivation
 
