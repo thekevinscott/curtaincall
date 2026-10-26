@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pexpect
 import pyte
+import pytest
 
 from curtaincall import ansi
 from curtaincall.locator import Locator
@@ -147,6 +148,29 @@ def describe_terminal_key_methods():
             term._child.send.assert_called_once_with(expected_seq)
 
 
+def describe_terminal_click():
+
+    def it_sends_sgr_press_then_release_with_1_based_coordinates():
+        term = _make_terminal(rows=5, cols=20)
+        term._child = MagicMock()
+        term.click(2, 7)
+        term._child.send.assert_called_once_with("\x1b[<0;8;3M\x1b[<0;8;3m")
+
+    def it_accepts_the_last_viewport_cell():
+        term = _make_terminal(rows=5, cols=20)
+        term._child = MagicMock()
+        term.click(4, 19)
+        term._child.send.assert_called_once_with("\x1b[<0;20;5M\x1b[<0;20;5m")
+
+    def it_rejects_cells_outside_the_viewport():
+        term = _make_terminal(rows=5, cols=20)
+        term._child = MagicMock()
+        for row, col in [(-1, 0), (0, -1), (5, 0), (0, 20)]:
+            with pytest.raises(ValueError, match="outside the 5x20 viewport"):
+                term.click(row, col)
+        term._child.send.assert_not_called()
+
+
 def describe_terminal_get_by_text():
 
     def it_returns_locator():
@@ -229,6 +253,19 @@ def describe_terminal_get_viewable_buffer():
         assert len(viewable) == 3
         full = term.get_buffer()
         assert len(full) > len(viewable)
+
+
+def describe_terminal_scrollback_len():
+
+    def it_is_zero_without_scrollback():
+        term = _make_terminal(rows=3, cols=10)
+        assert term._scrollback_len() == 0
+
+    def it_counts_rows_scrolled_off_the_viewport():
+        term = _make_terminal(rows=3, cols=10)
+        for i in range(6):
+            term._stream.feed(f"line-{i}\r\n".encode())
+        assert term._scrollback_len() == len(term.get_buffer()) - 3
 
 
 def describe_terminal_get_char_at():
