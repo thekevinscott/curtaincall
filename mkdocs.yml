@@ -1,8 +1,8 @@
 site_name: Curtaincall
 site_description: Testing library for terminal applications
-site_url: https://thekevinbot.github.io/curtaincall/
-repo_url: https://github.com/thekevinbot/curtaincall
-repo_name: thekevinbot/curtaincall
+site_url: https://thekevinscott.github.io/curtaincall/
+repo_url: https://github.com/thekevinscott/curtaincall
+repo_name: thekevinscott/curtaincall
 
 theme:
   name: material

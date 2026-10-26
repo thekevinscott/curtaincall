@@ -27,4 +27,6 @@ Breaking changes and meaningful deprecations must also add an entry to [MIGRATIO
 
 ### Fixed
 
+- Docs site header repo link (and `site_url`) pointed at the nonexistent `thekevinbot/curtaincall`; it now links to `thekevinscott/curtaincall`.
+
 ### Security
