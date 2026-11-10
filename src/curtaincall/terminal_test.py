@@ -1,5 +1,6 @@
 """Unit tests for Terminal class (mocked PTY)."""
 
+import os
 import re
 import signal
 import threading
@@ -14,6 +15,8 @@ from curtaincall import ansi
 from curtaincall.locator import Locator
 from curtaincall.terminal import Terminal
 from curtaincall.types import CursorPosition
+
+_DEVNULL_FD = os.open(os.devnull, os.O_RDONLY)
 
 
 def _make_terminal(rows: int = 5, cols: int = 20) -> Terminal:
@@ -74,7 +77,7 @@ def describe_terminal_start():
 
     @patch("curtaincall.terminal.pexpect.spawn")
     def it_spawns_child_process(mock_spawn):
-        mock_child = MagicMock()
+        mock_child = MagicMock(child_fd=_DEVNULL_FD)
         mock_child.read_nonblocking.side_effect = pexpect.EOF("done")
         mock_spawn.return_value = mock_child
 
@@ -94,7 +97,7 @@ def describe_terminal_start():
 
     @patch("curtaincall.terminal.pexpect.spawn")
     def it_sets_term_env(mock_spawn):
-        mock_child = MagicMock()
+        mock_child = MagicMock(child_fd=_DEVNULL_FD)
         mock_child.read_nonblocking.side_effect = pexpect.EOF("done")
         mock_spawn.return_value = mock_child
 
@@ -110,7 +113,7 @@ def describe_terminal_start():
 
     @patch("curtaincall.terminal.pexpect.spawn")
     def it_passes_cwd_to_spawn(mock_spawn, tmp_path):
-        mock_child = MagicMock()
+        mock_child = MagicMock(child_fd=_DEVNULL_FD)
         mock_child.read_nonblocking.side_effect = pexpect.EOF("done")
         mock_spawn.return_value = mock_child
 
@@ -124,7 +127,7 @@ def describe_terminal_start():
 
     @patch("curtaincall.terminal.pexpect.spawn")
     def it_defaults_cwd_to_none(mock_spawn):
-        mock_child = MagicMock()
+        mock_child = MagicMock(child_fd=_DEVNULL_FD)
         mock_child.read_nonblocking.side_effect = pexpect.EOF("done")
         mock_spawn.return_value = mock_child
 
@@ -139,7 +142,7 @@ def describe_terminal_start():
     @patch("curtaincall.terminal.pexpect.spawn")
     def it_inherits_parent_env_by_default(mock_spawn, monkeypatch):
         monkeypatch.setenv("CC_PARENT", "yes")
-        mock_child = MagicMock()
+        mock_child = MagicMock(child_fd=_DEVNULL_FD)
         mock_child.read_nonblocking.side_effect = pexpect.EOF("done")
         mock_spawn.return_value = mock_child
 
@@ -154,7 +157,7 @@ def describe_terminal_start():
     @patch("curtaincall.terminal.pexpect.spawn")
     def it_uses_only_given_env_when_not_inheriting(mock_spawn, monkeypatch):
         monkeypatch.setenv("CC_PARENT", "yes")
-        mock_child = MagicMock()
+        mock_child = MagicMock(child_fd=_DEVNULL_FD)
         mock_child.read_nonblocking.side_effect = pexpect.EOF("done")
         mock_spawn.return_value = mock_child
 
@@ -571,7 +574,7 @@ def describe_terminal_reader_loop():
 
     def it_feeds_data_to_stream():
         term = _make_terminal(rows=3, cols=10)
-        mock_child = MagicMock()
+        mock_child = MagicMock(child_fd=_DEVNULL_FD)
         # First call returns data, second raises EOF
         mock_child.read_nonblocking.side_effect = [b"Hi", pexpect.EOF("done")]
         term._child = mock_child
@@ -581,9 +584,24 @@ def describe_terminal_reader_loop():
 
         assert "Hi" in term._get_screen_text()
 
+    def it_reads_output_still_pending_when_pexpect_reports_eof():
+        term = _make_terminal(rows=3, cols=10)
+        read_fd, write_fd = os.pipe()
+        os.write(write_fd, b"bye")
+        os.close(write_fd)
+        mock_child = MagicMock(child_fd=read_fd)
+        mock_child.read_nonblocking.side_effect = pexpect.EOF("done")
+        term._child = mock_child
+        term._running = True
+
+        term._reader_loop()
+        os.close(read_fd)
+
+        assert "bye" in term._get_screen_text()
+
     def it_handles_timeout():
         term = _make_terminal(rows=3, cols=10)
-        mock_child = MagicMock()
+        mock_child = MagicMock(child_fd=_DEVNULL_FD)
         mock_child.read_nonblocking.side_effect = [
             pexpect.TIMEOUT("timeout"),
             b"OK",
@@ -598,7 +616,7 @@ def describe_terminal_reader_loop():
 
     def it_stops_when_running_is_false():
         term = _make_terminal(rows=3, cols=10)
-        mock_child = MagicMock()
+        mock_child = MagicMock(child_fd=_DEVNULL_FD)
         term._child = mock_child
         term._running = False
 
@@ -608,7 +626,7 @@ def describe_terminal_reader_loop():
 
     def it_skips_empty_data():
         term = _make_terminal(rows=3, cols=10)
-        mock_child = MagicMock()
+        mock_child = MagicMock(child_fd=_DEVNULL_FD)
         mock_child.read_nonblocking.side_effect = [b"", b"X", pexpect.EOF("done")]
         term._child = mock_child
         term._running = True
@@ -623,6 +641,7 @@ class _ReapTrackingChild:
     """Fake pexpect child whose reap paths record how many threads are inside at once."""
 
     def __init__(self) -> None:
+        self.child_fd = _DEVNULL_FD
         self._inside = 0
         self._guard = threading.Lock()
         self.max_concurrent = 0

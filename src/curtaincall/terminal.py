@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+import select
 import shlex
 import threading
 import time
@@ -100,7 +101,26 @@ class Terminal:
             except pexpect.TIMEOUT:
                 continue
             except pexpect.EOF:
+                self._read_remaining()
                 break
+
+    def _read_remaining(self) -> None:
+        # pexpect can report EOF while bytes the child wrote just before exiting
+        # are still on their way into the pty, so read the fd until it is empty.
+        assert self._child is not None
+        fd = self._child.child_fd
+        while self._running:
+            try:
+                ready, _, _ = select.select([fd], [], [], 0.05)
+                if not ready:
+                    return
+                data = os.read(fd, 4096)
+            except (OSError, ValueError):
+                return
+            if not data:
+                return
+            with self._lock:
+                self._stream.feed(data)
 
     # -- Input methods --
 
