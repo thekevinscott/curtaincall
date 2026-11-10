@@ -11,6 +11,7 @@ Breaking changes and meaningful deprecations must also add an entry to [MIGRATIO
 ### Added
 
 - `Terminal.pid` exposes the child process id, and `Terminal.signal(sig)` sends it a signal (e.g. `SIGSTOP`/`SIGCONT` to simulate suspend and resume, `SIGTERM`). Callers no longer need psutil lookups or private attributes.
+- `cwd` option on `Terminal` and the `terminal` fixture sets the child process's working directory, so callers no longer need to wrap commands in `sh -c "cd <dir> && exec ..."`.
 - Mouse click helpers: `Locator.click()` left-clicks the first match in the viewport, and `Terminal.click(row, col)` left-clicks a cell by 0-based viewport coordinates. Both send an SGR mouse press then release, converting to 1-based coordinates and (for locators) from buffer rows to viewport rows.
 - `CHANGELOG.md` and `MIGRATIONS.md` at the repo root, with `MIGRATIONS.md` included in the docs site as the Migrations page.
 - CI check (`.github/workflows/changelog.yml`) requiring every PR to update `CHANGELOG.md`, with a `Skip-Changelog: true` git commit trailer as the escape hatch for PRs without consumer impact.

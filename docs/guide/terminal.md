@@ -18,6 +18,9 @@ def test_example(terminal):
 
     # Custom environment variables
     term = terminal("python my_app.py", env={"DEBUG": "1"})
+
+    # Working directory for the command
+    term = terminal("python my_app.py", cwd="path/to/project")
 ```
 
 ## Reading the Screen

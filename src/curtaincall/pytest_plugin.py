@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Callable
 
 import pytest
@@ -22,6 +23,7 @@ def _create_terminal_factory(
         env: dict[str, str] | None = None,
         history: int = 1000,
         suppress_stderr: bool = False,
+        cwd: str | os.PathLike[str] | None = None,
     ) -> Terminal:
         term = Terminal(
             command,
@@ -30,6 +32,7 @@ def _create_terminal_factory(
             env=env,
             history=history,
             suppress_stderr=suppress_stderr,
+            cwd=cwd,
         )
         term.start()
         terminals.append(term)
