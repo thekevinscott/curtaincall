@@ -640,7 +640,7 @@ class _ReapTrackingChild:
         self._reap()
         return True
 
-    def read_nonblocking(self, size: int, timeout: float) -> bytes:
+    def read_nonblocking(self, *_args: object, **_kwargs: object) -> bytes:
         self.reads += 1
         if self.reads > 200:
             raise pexpect.EOF("done")
@@ -659,8 +659,8 @@ def describe_terminal_reap_serialization():
         reader.start()
 
         while reader.is_alive():
-            term.is_alive
-            term.exit_code
+            _ = term.is_alive
+            _ = term.exit_code
         reader.join()
 
         assert child.max_concurrent == 1
