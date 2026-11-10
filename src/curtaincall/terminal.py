@@ -38,6 +38,7 @@ class Terminal:
         rows: int = 30,
         cols: int = 80,
         env: dict[str, str] | None = None,
+        inherit_env: bool = True,
         history: int = 1000,
         suppress_stderr: bool = False,
         cwd: str | os.PathLike[str] | None = None,
@@ -50,6 +51,7 @@ class Terminal:
         self._cols = cols
         self._env = env
         self._cwd = cwd
+        self._inherit_env = inherit_env
 
         self._screen: pyte.HistoryScreen = pyte.HistoryScreen(
             cols,
@@ -64,7 +66,7 @@ class Terminal:
 
     def start(self) -> None:
         """Spawn the child process and start reading its output."""
-        spawn_env = os.environ.copy()
+        spawn_env = os.environ.copy() if self._inherit_env else {}
         spawn_env["TERM"] = "xterm-256color"
         spawn_env["COLUMNS"] = str(self._cols)
         spawn_env["LINES"] = str(self._rows)

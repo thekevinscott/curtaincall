@@ -135,6 +135,41 @@ def describe_terminal_start():
         term._running = False
         term._reader_thread.join(timeout=1.0)
 
+    @patch("curtaincall.terminal.pexpect.spawn")
+    def it_inherits_parent_env_by_default(mock_spawn, monkeypatch):
+        monkeypatch.setenv("CC_PARENT", "yes")
+        mock_child = MagicMock()
+        mock_child.read_nonblocking.side_effect = pexpect.EOF("done")
+        mock_spawn.return_value = mock_child
+
+        term = Terminal("echo")
+        term.start()
+
+        assert mock_spawn.call_args[1]["env"]["CC_PARENT"] == "yes"
+
+        term._running = False
+        term._reader_thread.join(timeout=1.0)
+
+    @patch("curtaincall.terminal.pexpect.spawn")
+    def it_uses_only_given_env_when_not_inheriting(mock_spawn, monkeypatch):
+        monkeypatch.setenv("CC_PARENT", "yes")
+        mock_child = MagicMock()
+        mock_child.read_nonblocking.side_effect = pexpect.EOF("done")
+        mock_spawn.return_value = mock_child
+
+        term = Terminal("echo", rows=10, cols=40, env={"MY_VAR": "123"}, inherit_env=False)
+        term.start()
+
+        assert mock_spawn.call_args[1]["env"] == {
+            "TERM": "xterm-256color",
+            "COLUMNS": "40",
+            "LINES": "10",
+            "MY_VAR": "123",
+        }
+
+        term._running = False
+        term._reader_thread.join(timeout=1.0)
+
 
 def describe_terminal_write():
 

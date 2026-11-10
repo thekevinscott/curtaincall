@@ -21,6 +21,7 @@ def describe_terminal_factory():
             rows=30,
             cols=80,
             env=None,
+            inherit_env=True,
             history=1000,
             suppress_stderr=False,
             cwd=None,
@@ -36,13 +37,14 @@ def describe_terminal_factory():
         terminals = []
 
         factory = _create_terminal_factory(terminals)
-        factory("cmd", rows=24, cols=120, env={"A": "B"}, cwd="/some/dir")
+        factory("cmd", rows=24, cols=120, env={"A": "B"}, inherit_env=False, cwd="/some/dir")
 
         MockTerminal.assert_called_once_with(
             "cmd",
             rows=24,
             cols=120,
             env={"A": "B"},
+            inherit_env=False,
             history=1000,
             suppress_stderr=False,
             cwd="/some/dir",

@@ -1,5 +1,6 @@
 """Integration tests for edge cases and failure modes."""
 
+import os
 import re
 import time
 
@@ -113,6 +114,18 @@ def describe_terminal_edge_cases():
         expect(term.get_by_text("ENV_DONE")).to_be_visible()
         expect(term.get_by_text("TERM=xterm-256color")).to_be_visible()
         expect(term.get_by_text("CC_TEST=present")).to_be_visible()
+
+    def it_drops_parent_env_when_not_inheriting(terminal, fixture_cmd, monkeypatch):
+        """inherit_env=False should keep parent variables out of the child."""
+        monkeypatch.setenv("CC_TEST", "leaked")
+        term = terminal(
+            fixture_cmd("env_check.py"),
+            env={"PATH": os.environ["PATH"]},
+            inherit_env=False,
+        )
+        expect(term.get_by_text("ENV_DONE")).to_be_visible()
+        expect(term.get_by_text("TERM=xterm-256color")).to_be_visible()
+        expect(term.get_by_text("CC_TEST=unset")).to_be_visible()
 
     def it_kill_terminates_hung_process(terminal, fixture_cmd):
         """kill() should force-terminate a long-running process."""

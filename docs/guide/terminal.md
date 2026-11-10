@@ -21,6 +21,8 @@ def test_example(terminal):
 
     # Working directory for the command
     term = terminal("python my_app.py", cwd="path/to/project")
+    # Exact environment: skip the parent's variables
+    term = terminal("python my_app.py", env={"PATH": "/usr/bin"}, inherit_env=False)
 ```
 
 ## Reading the Screen

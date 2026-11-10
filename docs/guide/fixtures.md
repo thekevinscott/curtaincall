@@ -20,6 +20,7 @@ def test_example(terminal):
 | `cols` | `int` | `80` | Terminal width |
 | `env` | `dict` | `None` | Extra environment variables |
 | `cwd` | `str \| PathLike` | `None` | Working directory for the command (defaults to the test process's cwd) |
+| `inherit_env` | `bool` | `True` | Start from the parent environment. When `False`, the child gets only `env` plus `TERM`, `COLUMNS`, and `LINES` |
 
 ### Multiple Terminals
 
