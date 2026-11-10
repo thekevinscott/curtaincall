@@ -1,6 +1,7 @@
 """Unit tests for Terminal class (mocked PTY)."""
 
 import re
+import signal
 import threading
 from unittest.mock import MagicMock, patch
 
@@ -359,6 +360,31 @@ def describe_terminal_set_size():
         assert term._screen.lines == 20
         assert term._screen.columns == 100
         term._child.setwinsize.assert_called_once_with(20, 100)
+
+
+def describe_terminal_pid():
+
+    def it_is_none_before_start():
+        assert _make_terminal().pid is None
+
+    def it_returns_child_pid():
+        term = _make_terminal()
+        term._child = MagicMock(pid=4242)
+        assert term.pid == 4242
+
+
+def describe_terminal_signal():
+
+    def it_raises_before_start():
+        term = _make_terminal()
+        with pytest.raises(RuntimeError, match="not been started"):
+            term.signal(signal.SIGTERM)
+
+    def it_sends_signal_to_child():
+        term = _make_terminal()
+        term._child = MagicMock()
+        term.signal(signal.SIGSTOP)
+        term._child.kill.assert_called_once_with(signal.SIGSTOP)
 
 
 def describe_terminal_kill():

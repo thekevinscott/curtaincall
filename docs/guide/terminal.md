@@ -48,6 +48,19 @@ term.set_size(rows=40, cols=120)
 
 The child process receives a SIGWINCH signal, just like a real terminal resize.
 
+## Signals
+
+`term.pid` is the child's process id. `term.signal()` sends it a signal:
+
+```python
+import signal
+
+term.signal(signal.SIGSTOP)  # suspend, like Ctrl-Z
+term.signal(signal.SIGCONT)  # resume, like fg
+```
+
+The signal goes to the child pid only, not its process group. With `suppress_stderr=True` the child is the `bash -c` wrapper.
+
 ## Cleanup
 
 Terminals are automatically killed when the test ends (via the fixture). You can also kill manually:

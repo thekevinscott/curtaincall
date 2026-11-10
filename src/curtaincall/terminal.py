@@ -238,6 +238,26 @@ class Terminal:
     # -- Process lifecycle --
 
     @property
+    def pid(self) -> int | None:
+        """The child process id, or None if the terminal has not been started.
+
+        With ``suppress_stderr=True`` the child is the ``bash -c`` wrapper, not the command.
+        """
+        if self._child is None:
+            return None
+        return self._child.pid
+
+    def signal(self, sig: int) -> None:
+        """Send a signal (e.g. ``signal.SIGSTOP``) to the child process.
+
+        The signal goes to ``pid`` only, not its process group. It is a no-op
+        once the child has exited.
+        """
+        if self._child is None:
+            raise RuntimeError("Terminal has not been started")
+        self._child.kill(sig)
+
+    @property
     def is_alive(self) -> bool:
         """Whether the child process is still running."""
         if self._child is None:
