@@ -194,6 +194,14 @@ def describe_scrollback_buffer():
         expect(term.get_by_text("line-0000", scrollback=False)).not_to_be_visible()
         expect(term.get_by_text("line-0199", scrollback=False)).to_be_visible()
 
+    def it_screen_text_returns_only_the_viewport(terminal, fixture_cmd):
+        term = terminal(fixture_cmd("large_output.py"), rows=5, cols=40)
+        expect(term.get_by_text("DONE")).to_be_visible(timeout=10.0)
+        text = term.screen_text()
+        assert len(text.split("\n")) == 5
+        assert "DONE" in text
+        assert "line-0000" not in text
+
 
 def describe_suppress_stderr():
     """Tests for suppress_stderr option."""

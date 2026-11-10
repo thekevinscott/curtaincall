@@ -14,6 +14,7 @@ Breaking changes and meaningful deprecations must also add an entry to [MIGRATIO
 - `cwd` option on `Terminal` and the `terminal` fixture sets the child process's working directory, so callers no longer need to wrap commands in `sh -c "cd <dir> && exec ..."`.
 - `inherit_env` option on `Terminal` and the `terminal` fixture. Pass `inherit_env=False` to give the child only the variables in `env` (plus `TERM`, `COLUMNS`, `LINES`), so tests can drop inherited variables without wrapping the command in `env --unset`.
 - `Terminal.get_by_text(..., scrollback=False)` scopes a locator to the visible viewport, so tests can assert text is on screen right now rather than anywhere in scrollback. The default (`scrollback=True`) is unchanged.
+- `Terminal.screen_text()` returns the visible viewport as a string (one line per row, trailing spaces stripped, scrollback excluded). Replaces reaching for the private `_get_screen_text()`.
 - Mouse click helpers: `Locator.click()` left-clicks the first match in the viewport, and `Terminal.click(row, col)` left-clicks a cell by 0-based viewport coordinates. Both send an SGR mouse press then release, converting to 1-based coordinates and (for locators) from buffer rows to viewport rows.
 - `CHANGELOG.md` and `MIGRATIONS.md` at the repo root, with `MIGRATIONS.md` included in the docs site as the Migrations page.
 - CI check (`.github/workflows/changelog.yml`) requiring every PR to update `CHANGELOG.md`, with a `Skip-Changelog: true` git commit trailer as the escape hatch for PRs without consumer impact.

@@ -34,8 +34,8 @@ buffer = term.get_buffer()      # list[list[str]]
 # Visible portion (same as get_buffer for now)
 visible = term.get_viewable_buffer()
 
-# Screen as string (for debugging)
-text = term._get_screen_text()
+# Visible screen as a string, one line per row, trailing spaces stripped
+text = term.screen_text()
 ```
 
 ## Cursor Position

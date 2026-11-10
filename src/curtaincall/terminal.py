@@ -337,6 +337,14 @@ class Terminal:
         with self._lock:
             return render_snapshot(self)
 
+    def screen_text(self) -> str:
+        """Return the visible viewport as text, one line per row, trailing spaces stripped.
+
+        Scrollback is excluded. Use ``get_buffer()`` for the full history.
+        """
+        buf = self.get_viewable_buffer()
+        return "\n".join("".join(row).rstrip() for row in buf)
+
     def _get_screen_text(self) -> str:
         """Return the full buffer content (scrollback + viewport) as a string."""
         buf = self.get_buffer()
