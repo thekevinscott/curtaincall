@@ -551,6 +551,21 @@ def describe_terminal_get_screen_text():
         assert lines[0] == "Hi"
 
 
+def describe_terminal_screen_text():
+
+    def it_returns_viewport_rows_with_trailing_whitespace_stripped():
+        term = _make_terminal(rows=2, cols=20)
+        term._stream.feed(b"Hi")
+        assert term.screen_text() == "Hi\n"
+
+    def it_excludes_scrollback():
+        term = _make_terminal(rows=3, cols=10)
+        for i in range(6):
+            term._stream.feed(f"line-{i}\r\n".encode())
+        text = term.screen_text()
+        assert text.split("\n") == ["line-4", "line-5", ""]
+
+
 def describe_terminal_reader_loop():
 
     def it_feeds_data_to_stream():
