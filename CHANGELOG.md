@@ -32,6 +32,7 @@ Breaking changes and meaningful deprecations must also add an entry to [MIGRATIO
 
 ### Fixed
 
+- Locator waits (`to_be_visible()`, `not_to_be_visible()`, `to_contain_text()`, and the color assertions) now fail as soon as the process under test exits, instead of polling until the timeout. The error includes the exit code (or killing signal) and the last screen. Output the process wrote before exiting is still read first, so text that appeared before exit still passes.
 - Releases were not publishing: every Release run since August failed because `putitoutthere.toml` used config keys the release engine no longer accepts. The config and `release.yml` now follow putitoutthere's current reusable-workflow setup, and a new `putitoutthere-check.yml` PR check validates the config. Releases now publish a wheel alongside the sdist, with the correct version; earlier attempts published `0.3.1.dev2` / `0.3.2.dev3` sdists because hatch-vcs ignored the package-specific version override.
 - Docs site header repo link (and `site_url`) pointed at the nonexistent `thekevinbot/curtaincall`; it now links to `thekevinscott/curtaincall`.
 

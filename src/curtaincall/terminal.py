@@ -271,6 +271,18 @@ class Terminal:
         # pexpect stores the status after the process exits
         return self._child.exitstatus
 
+    def _drain_output(self, timeout: float = 1.0) -> None:
+        """Wait for the reader thread to consume output left in the PTY after exit."""
+        if self._reader_thread is not None:
+            self._reader_thread.join(timeout=timeout)
+
+    def _exit_description(self) -> str:
+        if self._child is None:
+            return "Process was never started"
+        if self._child.signalstatus is not None:
+            return f"Process was killed by signal {self._child.signalstatus}"
+        return f"Process exited with code {self._child.exitstatus}"
+
     # -- Terminal control --
 
     def set_size(self, *, rows: int, cols: int) -> None:
