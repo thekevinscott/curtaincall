@@ -3,6 +3,7 @@
 import re
 import signal
 import threading
+import time
 from unittest.mock import MagicMock, patch
 
 import pexpect
@@ -616,3 +617,50 @@ def describe_terminal_reader_loop():
 
         text = term._get_screen_text()
         assert "X" in text
+
+
+class _ReapTrackingChild:
+    """Fake pexpect child whose reap paths record how many threads are inside at once."""
+
+    def __init__(self) -> None:
+        self._inside = 0
+        self._guard = threading.Lock()
+        self.max_concurrent = 0
+        self.reads = 0
+
+    def _reap(self) -> None:
+        with self._guard:
+            self._inside += 1
+            self.max_concurrent = max(self.max_concurrent, self._inside)
+        time.sleep(0.002)
+        with self._guard:
+            self._inside -= 1
+
+    def isalive(self) -> bool:
+        self._reap()
+        return True
+
+    def read_nonblocking(self, size: int, timeout: float) -> bytes:
+        self.reads += 1
+        if self.reads > 200:
+            raise pexpect.EOF("done")
+        self._reap()
+        return b""
+
+
+def describe_terminal_reap_serialization():
+
+    def it_never_reaps_from_two_threads_at_once():
+        term = _make_terminal()
+        child = _ReapTrackingChild()
+        term._child = child
+        term._running = True
+        reader = threading.Thread(target=term._reader_loop)
+        reader.start()
+
+        while reader.is_alive():
+            term.is_alive
+            term.exit_code
+        reader.join()
+
+        assert child.max_concurrent == 1
