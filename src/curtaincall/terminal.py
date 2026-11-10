@@ -40,6 +40,7 @@ class Terminal:
         env: dict[str, str] | None = None,
         history: int = 1000,
         suppress_stderr: bool = False,
+        cwd: str | os.PathLike[str] | None = None,
     ) -> None:
         if suppress_stderr:
             self._command = f"bash -c {shlex.quote(command + ' 2>/dev/null')}"
@@ -48,6 +49,7 @@ class Terminal:
         self._rows = rows
         self._cols = cols
         self._env = env
+        self._cwd = cwd
 
         self._screen: pyte.HistoryScreen = pyte.HistoryScreen(
             cols,
@@ -73,6 +75,7 @@ class Terminal:
             self._command,
             dimensions=(self._rows, self._cols),
             env=spawn_env,
+            cwd=self._cwd,
             encoding=None,  # binary mode
         )
         self._running = True

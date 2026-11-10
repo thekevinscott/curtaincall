@@ -23,6 +23,7 @@ def describe_terminal_factory():
             env=None,
             history=1000,
             suppress_stderr=False,
+            cwd=None,
         )
         mock_term.start.assert_called_once()
         assert result is mock_term
@@ -35,7 +36,7 @@ def describe_terminal_factory():
         terminals = []
 
         factory = _create_terminal_factory(terminals)
-        factory("cmd", rows=24, cols=120, env={"A": "B"})
+        factory("cmd", rows=24, cols=120, env={"A": "B"}, cwd="/some/dir")
 
         MockTerminal.assert_called_once_with(
             "cmd",
@@ -44,6 +45,7 @@ def describe_terminal_factory():
             env={"A": "B"},
             history=1000,
             suppress_stderr=False,
+            cwd="/some/dir",
         )
 
     @patch("curtaincall.pytest_plugin.Terminal")

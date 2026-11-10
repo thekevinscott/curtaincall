@@ -107,6 +107,34 @@ def describe_terminal_start():
         term._running = False
         term._reader_thread.join(timeout=1.0)
 
+    @patch("curtaincall.terminal.pexpect.spawn")
+    def it_passes_cwd_to_spawn(mock_spawn, tmp_path):
+        mock_child = MagicMock()
+        mock_child.read_nonblocking.side_effect = pexpect.EOF("done")
+        mock_spawn.return_value = mock_child
+
+        term = Terminal("echo", cwd=tmp_path)
+        term.start()
+
+        assert mock_spawn.call_args[1]["cwd"] == tmp_path
+
+        term._running = False
+        term._reader_thread.join(timeout=1.0)
+
+    @patch("curtaincall.terminal.pexpect.spawn")
+    def it_defaults_cwd_to_none(mock_spawn):
+        mock_child = MagicMock()
+        mock_child.read_nonblocking.side_effect = pexpect.EOF("done")
+        mock_spawn.return_value = mock_child
+
+        term = Terminal("echo")
+        term.start()
+
+        assert mock_spawn.call_args[1]["cwd"] is None
+
+        term._running = False
+        term._reader_thread.join(timeout=1.0)
+
 
 def describe_terminal_write():
 
