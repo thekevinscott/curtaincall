@@ -14,6 +14,16 @@ locator = term.get_by_text("Hello")
 locator = term.get_by_text("Hello, World!", full=True)
 ```
 
+## Scrollback
+
+By default, locators search the whole buffer, including lines that have scrolled off the top of the viewport. Pass `scrollback=False` to match only what is on screen right now:
+
+```python
+locator = term.get_by_text("Ready", scrollback=False)
+```
+
+Matched `cells` rows still use full-buffer coordinates (scrollback first), so they line up with the default mode.
+
 ## Regex Matching
 
 ```python

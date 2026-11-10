@@ -164,17 +164,20 @@ class Terminal:
         text: str | re.Pattern[str],
         *,
         full: bool = False,
+        scrollback: bool = True,
     ) -> Locator:
         """Create a locator that matches text on the screen.
 
         Args:
             text: String or compiled regex to search for.
             full: If True, match the entire line (stripped) instead of substring.
+            scrollback: If False, match only the visible viewport, not lines
+                that have scrolled off the top.
 
         Returns:
             A Locator instance (lazy -- doesn't search until used).
         """
-        return Locator(terminal=self, text=text, full=full)
+        return Locator(terminal=self, text=text, full=full, scrollback=scrollback)
 
     def get_cursor(self) -> CursorPosition:
         """Return the current cursor position."""
