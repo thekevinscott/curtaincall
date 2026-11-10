@@ -323,6 +323,37 @@ def describe_terminal_exit_code():
         assert term.exit_code == 42
 
 
+def describe_terminal_exit_description():
+
+    def it_reports_never_started():
+        assert _make_terminal()._exit_description() == "Process was never started"
+
+    def it_reports_exit_code():
+        term = _make_terminal()
+        term._child = MagicMock()
+        term._child.signalstatus = None
+        term._child.exitstatus = 3
+        assert term._exit_description() == "Process exited with code 3"
+
+    def it_reports_signal():
+        term = _make_terminal()
+        term._child = MagicMock()
+        term._child.signalstatus = 9
+        assert term._exit_description() == "Process was killed by signal 9"
+
+
+def describe_terminal_drain_output():
+
+    def it_is_a_noop_without_reader_thread():
+        _make_terminal()._drain_output()
+
+    def it_joins_the_reader_thread():
+        term = _make_terminal()
+        term._reader_thread = MagicMock()
+        term._drain_output(timeout=0.5)
+        term._reader_thread.join.assert_called_once_with(timeout=0.5)
+
+
 def describe_terminal_wait():
 
     def it_returns_exit_code_when_already_dead():

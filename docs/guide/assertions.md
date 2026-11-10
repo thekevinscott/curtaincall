@@ -47,3 +47,16 @@ $ python my_app.py
 Hello, World!
 $
 ```
+
+If the process exits before a locator assertion passes, the assertion fails right away instead of waiting out the timeout. The error names the exit code or signal:
+
+```
+AssertionError: Expected text to be visible: 'Ready'
+
+Process exited with code 1
+
+Screen content:
+Traceback (most recent call last):
+  ...
+RuntimeError: boom
+```
