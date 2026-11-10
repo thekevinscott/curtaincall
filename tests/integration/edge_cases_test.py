@@ -188,6 +188,12 @@ def describe_scrollback_buffer():
         expect(term.get_by_text("line-0000")).to_be_visible()
         expect(term.get_by_text("line-0100")).to_be_visible()
 
+    def it_scopes_locator_to_viewport_when_scrollback_disabled(terminal, fixture_cmd):
+        term = terminal(fixture_cmd("large_output.py"), rows=10, cols=40)
+        expect(term.get_by_text("DONE")).to_be_visible(timeout=10.0)
+        expect(term.get_by_text("line-0000", scrollback=False)).not_to_be_visible()
+        expect(term.get_by_text("line-0199", scrollback=False)).to_be_visible()
+
 
 def describe_suppress_stderr():
     """Tests for suppress_stderr option."""
