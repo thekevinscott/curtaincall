@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+import select
 import shlex
 import threading
 import time
@@ -62,6 +63,9 @@ class Terminal:
         self._child: pexpect.spawn | None = None
         self._reader_thread: threading.Thread | None = None
         self._lock = threading.RLock()
+        # pexpect's isalive() calls waitpid() and is not thread-safe; the reader
+        # thread reaches it through read_nonblocking().
+        self._reap_lock = threading.Lock()
         self._running = False
 
     def start(self) -> None:
@@ -89,14 +93,34 @@ class Terminal:
         assert self._child is not None
         while self._running:
             try:
-                data = self._child.read_nonblocking(4096, timeout=0.05)
+                with self._reap_lock:
+                    data = self._child.read_nonblocking(4096, timeout=0.05)
                 if data:
                     with self._lock:
                         self._stream.feed(data)
             except pexpect.TIMEOUT:
                 continue
             except pexpect.EOF:
+                self._read_remaining()
                 break
+
+    def _read_remaining(self) -> None:
+        # pexpect can report EOF while bytes the child wrote just before exiting
+        # are still on their way into the pty, so read the fd until it is empty.
+        assert self._child is not None
+        fd = self._child.child_fd
+        while self._running:
+            try:
+                ready, _, _ = select.select([fd], [], [], 0.05)
+                if not ready:
+                    return
+                data = os.read(fd, 4096)
+            except (OSError, ValueError):
+                return
+            if not data:
+                return
+            with self._lock:
+                self._stream.feed(data)
 
     # -- Input methods --
 
@@ -263,14 +287,20 @@ class Terminal:
         """
         if self._child is None:
             raise RuntimeError("Terminal has not been started")
-        self._child.kill(sig)
+        with self._reap_lock:
+            self._child.kill(sig)
 
     @property
     def is_alive(self) -> bool:
         """Whether the child process is still running."""
         if self._child is None:
             return False
-        return self._child.isalive()
+        return self._child_alive()
+
+    def _child_alive(self) -> bool:
+        assert self._child is not None
+        with self._reap_lock:
+            return self._child.isalive()
 
     def wait(self, *, timeout: float = 10.0) -> int:
         """Block until the child process exits and return its exit code.
@@ -281,7 +311,7 @@ class Terminal:
             raise RuntimeError("Terminal has not been started")
 
         deadline = time.monotonic() + timeout
-        while self._child.isalive():
+        while self._child_alive():
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 raise TimeoutError(f"Process did not exit within {timeout}s")
@@ -294,7 +324,7 @@ class Terminal:
         """The exit code of the child process, or None if still running."""
         if self._child is None:
             return None
-        if self._child.isalive():
+        if self._child_alive():
             return None
         # pexpect stores the status after the process exits
         return self._child.exitstatus
@@ -326,9 +356,10 @@ class Terminal:
         """Terminate the child process and stop the reader thread."""
         self._running = False
         if self._child is not None:
-            if self._child.isalive():
-                self._child.terminate(force=True)
-            self._child.close()
+            with self._reap_lock:
+                if self._child.isalive():
+                    self._child.terminate(force=True)
+                self._child.close()
         if self._reader_thread is not None:
             self._reader_thread.join(timeout=2.0)
 
