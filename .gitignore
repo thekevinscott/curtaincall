@@ -14,3 +14,9 @@ site/
 
 # Local
 .beads/
+
+# Node
+node_modules/
+
+# Git worktrees
+.worktrees/
