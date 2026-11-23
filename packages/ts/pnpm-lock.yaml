@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@xterm/addon-unicode11':
+        specifier: ^0.9.0
+        version: 0.9.0
       '@xterm/headless':
         specifier: ^6.0.0
         version: 6.0.0
@@ -257,6 +260,9 @@ packages:
 
   '@vitest/spy@5.1.1':
     resolution: {integrity: sha512-6K8C6alQG1/Yc8/ZI22iJS7JEsxPdVzqtqDq+/xM4Z0mGVykemMVjLhqMy/q6/IHYG3kKD8hKSwRen/ZdyI9vQ==}
+
+  '@xterm/addon-unicode11@0.9.0':
+    resolution: {integrity: sha512-FxDnYcyuXhNl+XSqGZL/t0U9eiNb/q3EWT5rYkQT/zuig8Gz/VagnQANKHdDWFM2lTMk9ly0EFQxxxtZUoRetw==}
 
   '@xterm/headless@6.0.0':
     resolution: {integrity: sha512-5Yj1QINYCyzrZtf8OFIHi47iQtI+0qYFPHmouEfG8dHNxbZ9Tb9YGSuLcsEwj9Z+OL75GJqPyJbyoFer80a2Hw==}
@@ -682,6 +688,8 @@ snapshots:
       vite: 8.3.8(@types/node@22.20.5)
 
   '@vitest/spy@5.1.1': {}
+
+  '@xterm/addon-unicode11@0.9.0': {}
 
   '@xterm/headless@6.0.0': {}
 

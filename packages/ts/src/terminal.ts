@@ -1,5 +1,6 @@
 /** Terminal session management with PTY and VT100 emulation. */
 
+import unicode11 from "@xterm/addon-unicode11";
 import xtermHeadless, {
   type IBufferCell,
   type IBufferLine,
@@ -15,6 +16,7 @@ import { rstrip } from "./text.js";
 import { type CellStyle, type CursorPosition, TimeoutError } from "./types.js";
 
 const { Terminal: Xterm } = xtermHeadless;
+const { Unicode11Addon } = unicode11;
 
 export interface TerminalOptions {
   rows?: number;
@@ -89,6 +91,12 @@ function colorName(
   return hex(v, v, v);
 }
 
+// pyte stores a base character and its combining marks composed (NFC).
+function cellText(cell: IBufferCell | undefined): string {
+  const chars = cell?.getChars() || " ";
+  return chars.length > 1 ? chars.normalize("NFC") : chars;
+}
+
 /**
  * A terminal session backed by a real PTY and VT100 emulator.
  *
@@ -141,6 +149,9 @@ export class Terminal {
       scrollback: history,
       allowProposedApi: true,
     });
+    // xterm's default width table predates emoji; pyte counts them as two cells.
+    this._screen.loadAddon(new Unicode11Addon());
+    this._screen.unicode.activeVersion = "11";
   }
 
   /** Spawn the child process and start reading its output. */
@@ -310,7 +321,7 @@ export class Terminal {
       const line = this._line(y);
       const row: string[] = [];
       for (let x = 0; x < cols; x++) {
-        row.push(line.getCell(x, cell)?.getChars() || " ");
+        row.push(cellText(line.getCell(x, cell)));
       }
       result.push(row);
     }
@@ -355,7 +366,7 @@ export class Terminal {
       throw new RangeError(`Column ${col} is outside the buffer`);
     }
     return Object.freeze({
-      data: cell.getChars() || " ",
+      data: cellText(cell),
       fg: colorName(cell.isFgDefault(), cell.isFgPalette(), cell.getFgColor()),
       bg: colorName(cell.isBgDefault(), cell.isBgPalette(), cell.getBgColor()),
       bold: cell.isBold() !== 0,

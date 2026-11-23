@@ -7,7 +7,6 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "stripInternal": true,
     "outDir": "dist",
     "noUncheckedIndexedAccess": true,
     "verbatimModuleSyntax": true,
