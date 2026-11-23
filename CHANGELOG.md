@@ -10,6 +10,7 @@ Breaking changes and meaningful deprecations must also add an entry to [MIGRATIO
 
 ### Added
 
+- TypeScript port in `packages/ts` (npm package name `curtaincall`, not yet published). It mirrors the Python API with camelCase names, an options object in place of keyword arguments, Promises for anything that waits, and timeouts in milliseconds. The `terminal` fixture is a vitest fixture exported from `curtaincall/vitest`. It runs on `node-pty` and `@xterm/headless`. Adds `ts-*` recipes to the `justfile` and a `TypeScript` CI workflow.
 - Mouse click helpers: `Locator.click()` left-clicks the first match in the viewport, and `Terminal.click(row, col)` left-clicks a cell by 0-based viewport coordinates. Both send an SGR mouse press then release, converting to 1-based coordinates and (for locators) from buffer rows to viewport rows.
 - `CHANGELOG.md` and `MIGRATIONS.md` at the repo root, with `MIGRATIONS.md` included in the docs site as the Migrations page.
 - CI check (`.github/workflows/changelog.yml`) requiring every PR to update `CHANGELOG.md`, with a `Skip-Changelog: true` git commit trailer as the escape hatch for PRs without consumer impact.
