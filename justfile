@@ -85,3 +85,31 @@ test-unit-watch *args:
 # Watch integration tests
 test-integration-watch *args:
     uv run ptw --now tests/integration tests/integration/ {{args}}
+
+# Install TypeScript package dependencies
+ts-install:
+    pnpm --dir packages/ts install --frozen-lockfile
+
+# Lint the TypeScript package
+ts-lint:
+    pnpm --dir packages/ts lint
+
+# Typecheck the TypeScript package
+ts-typecheck:
+    pnpm --dir packages/ts typecheck
+
+# Build the TypeScript package
+ts-build:
+    pnpm --dir packages/ts build
+
+# Run TypeScript unit tests
+ts-test-unit *args:
+    pnpm --dir packages/ts test:unit {{args}}
+
+# Run TypeScript integration tests
+ts-test-integration *args:
+    pnpm --dir packages/ts test:integration {{args}}
+
+# Run all TypeScript tests
+ts-test *args:
+    pnpm --dir packages/ts test {{args}}

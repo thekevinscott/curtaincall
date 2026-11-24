@@ -10,6 +10,7 @@ Breaking changes and meaningful deprecations must also add an entry to [MIGRATIO
 
 ### Added
 
+- TypeScript port in `packages/ts` (npm package name `curtaincall`, not yet published). It mirrors the Python API with camelCase names, an options object in place of keyword arguments, Promises for anything that waits, and timeouts in milliseconds. The `terminal` fixture is a vitest fixture exported from `curtaincall/vitest`. It runs on `node-pty` and `@xterm/headless`. Adds `ts-*` recipes to the `justfile` and a `TypeScript` CI workflow.
 - `Terminal.pid` exposes the child process id, and `Terminal.signal(sig)` sends it a signal (e.g. `SIGSTOP`/`SIGCONT` to simulate suspend and resume, `SIGTERM`). Callers no longer need psutil lookups or private attributes.
 - `cwd` option on `Terminal` and the `terminal` fixture sets the child process's working directory, so callers no longer need to wrap commands in `sh -c "cd <dir> && exec ..."`.
 - `inherit_env` option on `Terminal` and the `terminal` fixture. Pass `inherit_env=False` to give the child only the variables in `env` (plus `TERM`, `COLUMNS`, `LINES`), so tests can drop inherited variables without wrapping the command in `env --unset`.

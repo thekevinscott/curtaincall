@@ -1,0 +1,39 @@
+name: TypeScript
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/ts/**'
+      - 'tests/fixtures/**'
+      - 'justfile'
+      - '.github/workflows/ts.yml'
+  pull_request:
+    paths:
+      - 'packages/ts/**'
+      - 'tests/fixtures/**'
+      - 'justfile'
+      - '.github/workflows/ts.yml'
+
+jobs:
+  ts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 12
+      - run: uv sync --extra dev
+      - run: uv run just ts-install
+      - name: Lint
+        run: uv run just ts-lint
+      - name: Typecheck
+        run: uv run just ts-typecheck
+      - name: Build
+        run: uv run just ts-build
+      - name: Run tests
+        run: uv run just ts-test
