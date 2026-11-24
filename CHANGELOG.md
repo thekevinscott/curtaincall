@@ -11,6 +11,11 @@ Breaking changes and meaningful deprecations must also add an entry to [MIGRATIO
 ### Added
 
 - TypeScript port in `packages/ts` (npm package name `curtaincall`, not yet published). It mirrors the Python API with camelCase names, an options object in place of keyword arguments, Promises for anything that waits, and timeouts in milliseconds. The `terminal` fixture is a vitest fixture exported from `curtaincall/vitest`. It runs on `node-pty` and `@xterm/headless`. Adds `ts-*` recipes to the `justfile` and a `TypeScript` CI workflow.
+- `Terminal.pid` exposes the child process id, and `Terminal.signal(sig)` sends it a signal (e.g. `SIGSTOP`/`SIGCONT` to simulate suspend and resume, `SIGTERM`). Callers no longer need psutil lookups or private attributes.
+- `cwd` option on `Terminal` and the `terminal` fixture sets the child process's working directory, so callers no longer need to wrap commands in `sh -c "cd <dir> && exec ..."`.
+- `inherit_env` option on `Terminal` and the `terminal` fixture. Pass `inherit_env=False` to give the child only the variables in `env` (plus `TERM`, `COLUMNS`, `LINES`), so tests can drop inherited variables without wrapping the command in `env --unset`.
+- `Terminal.get_by_text(..., scrollback=False)` scopes a locator to the visible viewport, so tests can assert text is on screen right now rather than anywhere in scrollback. The default (`scrollback=True`) is unchanged.
+- `Terminal.screen_text()` returns the visible viewport as a string (one line per row, trailing spaces stripped, scrollback excluded). Replaces reaching for the private `_get_screen_text()`.
 - Mouse click helpers: `Locator.click()` left-clicks the first match in the viewport, and `Terminal.click(row, col)` left-clicks a cell by 0-based viewport coordinates. Both send an SGR mouse press then release, converting to 1-based coordinates and (for locators) from buffer rows to viewport rows.
 - `CHANGELOG.md` and `MIGRATIONS.md` at the repo root, with `MIGRATIONS.md` included in the docs site as the Migrations page.
 - CI check (`.github/workflows/changelog.yml`) requiring every PR to update `CHANGELOG.md`, with a `Skip-Changelog: true` git commit trailer as the escape hatch for PRs without consumer impact.
@@ -33,6 +38,9 @@ Breaking changes and meaningful deprecations must also add an entry to [MIGRATIO
 
 ### Fixed
 
+- Intermittent `isalive() encountered condition where "terminated" is 0, but there was no child process` errors. The reader thread and the caller could both call pexpect's `isalive()` (which calls `waitpid()`) at the same time; `Terminal` now serializes every call that can reap the child.
+- Output a process wrote just before exiting could be lost, so a locator for its last line failed with "Process exited". pexpect can report EOF before those bytes reach the pty; the reader now reads the pty until it is empty before stopping.
+- Locator waits (`to_be_visible()`, `not_to_be_visible()`, `to_contain_text()`, and the color assertions) now fail as soon as the process under test exits, instead of polling until the timeout. The error includes the exit code (or killing signal) and the last screen. Output the process wrote before exiting is still read first, so text that appeared before exit still passes.
 - Releases were not publishing: every Release run since August failed because `putitoutthere.toml` used config keys the release engine no longer accepts. The config and `release.yml` now follow putitoutthere's current reusable-workflow setup, and a new `putitoutthere-check.yml` PR check validates the config. Releases now publish a wheel alongside the sdist, with the correct version; earlier attempts published `0.3.1.dev2` / `0.3.2.dev3` sdists because hatch-vcs ignored the package-specific version override.
 - Docs site header repo link (and `site_url`) pointed at the nonexistent `thekevinbot/curtaincall`; it now links to `thekevinscott/curtaincall`.
 

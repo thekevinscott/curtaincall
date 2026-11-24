@@ -31,19 +31,26 @@ class Locator:
         text: str | re.Pattern[str],
         *,
         full: bool = False,
+        scrollback: bool = True,
     ) -> None:
         self._terminal = terminal
         self._text = text
         self._full = full
+        self._scrollback = scrollback
+
+    def _rows(self) -> list[tuple[int, str]]:
+        """Searchable rows as (full-buffer row index, line text)."""
+        with self._terminal._lock:
+            buffer = self._terminal.get_buffer()
+            first = 0 if self._scrollback else self._terminal._scrollback_len()
+        return [(idx, "".join(buffer[idx])) for idx in range(first, len(buffer))]
 
     @property
     def cells(self) -> list[CellMatch]:
         """Find all matching cell positions on the screen."""
-        buffer = self._terminal.get_buffer()
         matches: list[CellMatch] = []
 
-        for row_idx, row in enumerate(buffer):
-            line = "".join(row)
+        for row_idx, line in self._rows():
             if self._full:
                 self._match_full_line(line, row_idx, matches)
             else:
@@ -102,9 +109,7 @@ class Locator:
     def text(self) -> str:
         """Return the matched text content."""
         if isinstance(self._text, re.Pattern):
-            buffer = self._terminal.get_buffer()
-            for row in buffer:
-                line = "".join(row)
+            for _, line in self._rows():
                 m = self._text.fullmatch(line.strip()) if self._full else self._text.search(line)
                 if m:
                     return m.group()

@@ -43,7 +43,7 @@ Install, write your first test, and learn how PTY spawning + VT100 emulation dri
 
 ### Terminal
 
-The `Terminal` class manages a child process running in a pseudo-terminal. Read the screen, inspect the cursor, resize, and clean up. → [docs/guide/terminal.md](docs/guide/terminal.md)
+The `Terminal` class manages a child process running in a pseudo-terminal. Read the screen, inspect the cursor, resize, send signals, and clean up. → [docs/guide/terminal.md](docs/guide/terminal.md)
 
 ### Locators
 

@@ -1,5 +1,6 @@
 """Integration tests for edge cases and failure modes."""
 
+import os
 import re
 import time
 
@@ -114,6 +115,18 @@ def describe_terminal_edge_cases():
         expect(term.get_by_text("TERM=xterm-256color")).to_be_visible()
         expect(term.get_by_text("CC_TEST=present")).to_be_visible()
 
+    def it_drops_parent_env_when_not_inheriting(terminal, fixture_cmd, monkeypatch):
+        """inherit_env=False should keep parent variables out of the child."""
+        monkeypatch.setenv("CC_TEST", "leaked")
+        term = terminal(
+            fixture_cmd("env_check.py"),
+            env={"PATH": os.environ["PATH"]},
+            inherit_env=False,
+        )
+        expect(term.get_by_text("ENV_DONE")).to_be_visible()
+        expect(term.get_by_text("TERM=xterm-256color")).to_be_visible()
+        expect(term.get_by_text("CC_TEST=unset")).to_be_visible()
+
     def it_kill_terminates_hung_process(terminal, fixture_cmd):
         """kill() should force-terminate a long-running process."""
         term = terminal(fixture_cmd("signal_handler.py"))
@@ -174,6 +187,20 @@ def describe_scrollback_buffer():
         # line-0000 was emitted first and is certainly in scrollback
         expect(term.get_by_text("line-0000")).to_be_visible()
         expect(term.get_by_text("line-0100")).to_be_visible()
+
+    def it_scopes_locator_to_viewport_when_scrollback_disabled(terminal, fixture_cmd):
+        term = terminal(fixture_cmd("large_output.py"), rows=10, cols=40)
+        expect(term.get_by_text("DONE")).to_be_visible(timeout=10.0)
+        expect(term.get_by_text("line-0000", scrollback=False)).not_to_be_visible()
+        expect(term.get_by_text("line-0199", scrollback=False)).to_be_visible()
+
+    def it_screen_text_returns_only_the_viewport(terminal, fixture_cmd):
+        term = terminal(fixture_cmd("large_output.py"), rows=5, cols=40)
+        expect(term.get_by_text("DONE")).to_be_visible(timeout=10.0)
+        text = term.screen_text()
+        assert len(text.split("\n")) == 5
+        assert "DONE" in text
+        assert "line-0000" not in text
 
 
 def describe_suppress_stderr():

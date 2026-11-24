@@ -31,6 +31,10 @@ def describe_terminal_lifecycle():
         )
         expect(term.get_by_text("Hello, World!")).to_be_visible()
 
+    def it_runs_command_in_given_cwd(terminal, tmp_path):
+        term = terminal("pwd", cols=200, cwd=tmp_path)
+        expect(term.get_by_text(str(tmp_path.resolve()))).to_be_visible()
+
     def it_handles_immediate_exit(terminal, fixture_cmd):
         term = terminal(fixture_cmd("exit_code.py") + " 0")
         # Should not hang or raise -- just verify we can read the buffer

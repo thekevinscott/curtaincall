@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+import select
 import shlex
 import threading
 import time
@@ -38,8 +39,10 @@ class Terminal:
         rows: int = 30,
         cols: int = 80,
         env: dict[str, str] | None = None,
+        inherit_env: bool = True,
         history: int = 1000,
         suppress_stderr: bool = False,
+        cwd: str | os.PathLike[str] | None = None,
     ) -> None:
         if suppress_stderr:
             self._command = f"bash -c {shlex.quote(command + ' 2>/dev/null')}"
@@ -48,6 +51,8 @@ class Terminal:
         self._rows = rows
         self._cols = cols
         self._env = env
+        self._cwd = cwd
+        self._inherit_env = inherit_env
 
         self._screen: pyte.HistoryScreen = pyte.HistoryScreen(
             cols,
@@ -58,11 +63,14 @@ class Terminal:
         self._child: pexpect.spawn | None = None
         self._reader_thread: threading.Thread | None = None
         self._lock = threading.RLock()
+        # pexpect's isalive() calls waitpid() and is not thread-safe; the reader
+        # thread reaches it through read_nonblocking().
+        self._reap_lock = threading.Lock()
         self._running = False
 
     def start(self) -> None:
         """Spawn the child process and start reading its output."""
-        spawn_env = os.environ.copy()
+        spawn_env = os.environ.copy() if self._inherit_env else {}
         spawn_env["TERM"] = "xterm-256color"
         spawn_env["COLUMNS"] = str(self._cols)
         spawn_env["LINES"] = str(self._rows)
@@ -73,6 +81,7 @@ class Terminal:
             self._command,
             dimensions=(self._rows, self._cols),
             env=spawn_env,
+            cwd=self._cwd,
             encoding=None,  # binary mode
         )
         self._running = True
@@ -84,14 +93,34 @@ class Terminal:
         assert self._child is not None
         while self._running:
             try:
-                data = self._child.read_nonblocking(4096, timeout=0.05)
+                with self._reap_lock:
+                    data = self._child.read_nonblocking(4096, timeout=0.05)
                 if data:
                     with self._lock:
                         self._stream.feed(data)
             except pexpect.TIMEOUT:
                 continue
             except pexpect.EOF:
+                self._read_remaining()
                 break
+
+    def _read_remaining(self) -> None:
+        # pexpect can report EOF while bytes the child wrote just before exiting
+        # are still on their way into the pty, so read the fd until it is empty.
+        assert self._child is not None
+        fd = self._child.child_fd
+        while self._running:
+            try:
+                ready, _, _ = select.select([fd], [], [], 0.05)
+                if not ready:
+                    return
+                data = os.read(fd, 4096)
+            except (OSError, ValueError):
+                return
+            if not data:
+                return
+            with self._lock:
+                self._stream.feed(data)
 
     # -- Input methods --
 
@@ -159,17 +188,20 @@ class Terminal:
         text: str | re.Pattern[str],
         *,
         full: bool = False,
+        scrollback: bool = True,
     ) -> Locator:
         """Create a locator that matches text on the screen.
 
         Args:
             text: String or compiled regex to search for.
             full: If True, match the entire line (stripped) instead of substring.
+            scrollback: If False, match only the visible viewport, not lines
+                that have scrolled off the top.
 
         Returns:
             A Locator instance (lazy -- doesn't search until used).
         """
-        return Locator(terminal=self, text=text, full=full)
+        return Locator(terminal=self, text=text, full=full, scrollback=scrollback)
 
     def get_cursor(self) -> CursorPosition:
         """Return the current cursor position."""
@@ -238,11 +270,37 @@ class Terminal:
     # -- Process lifecycle --
 
     @property
+    def pid(self) -> int | None:
+        """The child process id, or None if the terminal has not been started.
+
+        With ``suppress_stderr=True`` the child is the ``bash -c`` wrapper, not the command.
+        """
+        if self._child is None:
+            return None
+        return self._child.pid
+
+    def signal(self, sig: int) -> None:
+        """Send a signal (e.g. ``signal.SIGSTOP``) to the child process.
+
+        The signal goes to ``pid`` only, not its process group. It is a no-op
+        once the child has exited.
+        """
+        if self._child is None:
+            raise RuntimeError("Terminal has not been started")
+        with self._reap_lock:
+            self._child.kill(sig)
+
+    @property
     def is_alive(self) -> bool:
         """Whether the child process is still running."""
         if self._child is None:
             return False
-        return self._child.isalive()
+        return self._child_alive()
+
+    def _child_alive(self) -> bool:
+        assert self._child is not None
+        with self._reap_lock:
+            return self._child.isalive()
 
     def wait(self, *, timeout: float = 10.0) -> int:
         """Block until the child process exits and return its exit code.
@@ -253,7 +311,7 @@ class Terminal:
             raise RuntimeError("Terminal has not been started")
 
         deadline = time.monotonic() + timeout
-        while self._child.isalive():
+        while self._child_alive():
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 raise TimeoutError(f"Process did not exit within {timeout}s")
@@ -266,10 +324,22 @@ class Terminal:
         """The exit code of the child process, or None if still running."""
         if self._child is None:
             return None
-        if self._child.isalive():
+        if self._child_alive():
             return None
         # pexpect stores the status after the process exits
         return self._child.exitstatus
+
+    def _drain_output(self, timeout: float = 1.0) -> None:
+        """Wait for the reader thread to consume output left in the PTY after exit."""
+        if self._reader_thread is not None:
+            self._reader_thread.join(timeout=timeout)
+
+    def _exit_description(self) -> str:
+        if self._child is None:
+            return "Process was never started"
+        if self._child.signalstatus is not None:
+            return f"Process was killed by signal {self._child.signalstatus}"
+        return f"Process exited with code {self._child.exitstatus}"
 
     # -- Terminal control --
 
@@ -286,9 +356,10 @@ class Terminal:
         """Terminate the child process and stop the reader thread."""
         self._running = False
         if self._child is not None:
-            if self._child.isalive():
-                self._child.terminate(force=True)
-            self._child.close()
+            with self._reap_lock:
+                if self._child.isalive():
+                    self._child.terminate(force=True)
+                self._child.close()
         if self._reader_thread is not None:
             self._reader_thread.join(timeout=2.0)
 
@@ -296,6 +367,14 @@ class Terminal:
         """Render the current screen as a box-drawn snapshot string."""
         with self._lock:
             return render_snapshot(self)
+
+    def screen_text(self) -> str:
+        """Return the visible viewport as text, one line per row, trailing spaces stripped.
+
+        Scrollback is excluded. Use ``get_buffer()`` for the full history.
+        """
+        buf = self.get_viewable_buffer()
+        return "\n".join("".join(row).rstrip() for row in buf)
 
     def _get_screen_text(self) -> str:
         """Return the full buffer content (scrollback + viewport) as a string."""

@@ -42,25 +42,45 @@ def _color_matches(actual: str, expected: str) -> bool:
     return actual_lower in aliases
 
 
+def _fail(failure_message: str, screen_fn: callable | None) -> None:
+    msg = failure_message
+    if screen_fn:
+        msg += f"\n\nScreen content:\n{screen_fn()}"
+    raise AssertionError(msg)
+
+
+def _poll_until(
+    done_fn: callable,
+    timeout: float,
+    interval: float,
+    failure_message: str,
+    screen_fn: callable | None,
+    terminal: Terminal | None,
+) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if done_fn():
+            return
+        if terminal is not None and not terminal.is_alive:
+            # Nothing on screen can change once the process is gone; fail now.
+            terminal._drain_output()
+            if done_fn():
+                return
+            _fail(f"{failure_message}\n\n{terminal._exit_description()}", screen_fn)
+        time.sleep(interval)
+    _fail(failure_message, screen_fn)
+
+
 def _poll(
     check_fn: callable,
     timeout: float,
     interval: float = 0.1,
     failure_message: str = "",
     screen_fn: callable | None = None,
+    terminal: Terminal | None = None,
 ) -> None:
-    """Poll until check_fn() returns True or timeout expires."""
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        if check_fn():
-            return
-        time.sleep(interval)
-
-    # Build failure message with screen dump
-    msg = failure_message
-    if screen_fn:
-        msg += f"\n\nScreen content:\n{screen_fn()}"
-    raise AssertionError(msg)
+    """Poll until check_fn() returns True, the timeout expires, or the process exits."""
+    _poll_until(check_fn, timeout, interval, failure_message, screen_fn, terminal)
 
 
 def _poll_negative(
@@ -69,18 +89,10 @@ def _poll_negative(
     interval: float = 0.1,
     failure_message: str = "",
     screen_fn: callable | None = None,
+    terminal: Terminal | None = None,
 ) -> None:
-    """Poll until check_fn() returns False or timeout expires."""
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        if not check_fn():
-            return
-        time.sleep(interval)
-
-    msg = failure_message
-    if screen_fn:
-        msg += f"\n\nScreen content:\n{screen_fn()}"
-    raise AssertionError(msg)
+    """Poll until check_fn() returns False, the timeout expires, or the process exits."""
+    _poll_until(lambda: not check_fn(), timeout, interval, failure_message, screen_fn, terminal)
 
 
 class LocatorAssertions:
@@ -96,6 +108,7 @@ class LocatorAssertions:
             timeout=timeout,
             failure_message=f"Expected text to be visible: {self._locator._text!r}",
             screen_fn=self._locator._terminal._get_screen_text,
+            terminal=self._locator._terminal,
         )
 
     def not_to_be_visible(self, *, timeout: float = 5.0) -> None:
@@ -105,6 +118,7 @@ class LocatorAssertions:
             timeout=timeout,
             failure_message=f"Expected text NOT to be visible: {self._locator._text!r}",
             screen_fn=self._locator._terminal._get_screen_text,
+            terminal=self._locator._terminal,
         )
 
     def to_have_fg_color(self, color: str, *, timeout: float = 5.0) -> None:
@@ -126,6 +140,7 @@ class LocatorAssertions:
             timeout=timeout,
             failure_message=f"Expected text {self._locator._text!r} to have fg color {color!r}",
             screen_fn=self._locator._terminal._get_screen_text,
+            terminal=self._locator._terminal,
         )
 
     def to_have_bg_color(self, color: str, *, timeout: float = 5.0) -> None:
@@ -147,6 +162,7 @@ class LocatorAssertions:
             timeout=timeout,
             failure_message=f"Expected text {self._locator._text!r} to have bg color {color!r}",
             screen_fn=self._locator._terminal._get_screen_text,
+            terminal=self._locator._terminal,
         )
 
     def to_contain_text(self, text: str, *, timeout: float = 5.0) -> None:
@@ -161,6 +177,7 @@ class LocatorAssertions:
             timeout=timeout,
             failure_message=f"Expected locator to contain text {text!r}",
             screen_fn=self._locator._terminal._get_screen_text,
+            terminal=self._locator._terminal,
         )
 
 

@@ -1,5 +1,6 @@
 """Unit tests for expect() polling, color matching, and assertion classes."""
 
+import time
 from unittest.mock import MagicMock
 
 import pytest
@@ -139,6 +140,56 @@ def describe_poll_negative():
 
         _poll_negative(check, timeout=2.0, interval=0.05)
         assert state["count"] >= 3
+
+
+def _exited_terminal(description: str = "Process exited with code 1"):
+    term = MagicMock()
+    term.is_alive = False
+    term._exit_description.return_value = description
+    return term
+
+
+def describe_poll_when_process_exits():
+
+    def it_fails_fast_with_exit_description_and_screen():
+        start = time.monotonic()
+        with pytest.raises(AssertionError) as exc_info:
+            _poll(
+                lambda: False,
+                timeout=10.0,
+                failure_message="not found",
+                screen_fn=lambda: "last screen",
+                terminal=_exited_terminal(),
+            )
+        assert time.monotonic() - start < 1.0
+        message = str(exc_info.value)
+        assert "not found" in message
+        assert "Process exited with code 1" in message
+        assert "last screen" in message
+
+    def it_drains_output_then_passes_if_check_now_succeeds():
+        term = _exited_terminal()
+        state = {"drained": False}
+        term._drain_output.side_effect = lambda: state.update(drained=True)
+        _poll(lambda: state["drained"], timeout=10.0, terminal=term)
+        term._drain_output.assert_called_once()
+
+    def it_keeps_polling_while_process_is_alive():
+        term = MagicMock()
+        term.is_alive = True
+        with pytest.raises(AssertionError) as exc_info:
+            _poll(lambda: False, timeout=0.2, failure_message="timed out", terminal=term)
+        assert "Process" not in str(exc_info.value)
+
+    def it_fails_fast_for_negative_poll():
+        start = time.monotonic()
+        with pytest.raises(AssertionError, match="killed by signal 9"):
+            _poll_negative(
+                lambda: True,
+                timeout=10.0,
+                terminal=_exited_terminal("Process was killed by signal 9"),
+            )
+        assert time.monotonic() - start < 1.0
 
 
 def _mock_locator(*, visible: bool = True, text: str = "test"):

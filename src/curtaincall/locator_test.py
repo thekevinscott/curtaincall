@@ -143,3 +143,30 @@ def describe_locator_click():
         with pytest.raises(LookupError, match="has scrolled out of the viewport"):
             Locator(term, "Save").click()
         term.click.assert_not_called()
+
+
+def describe_locator_viewport_scope():
+
+    def it_matches_scrollback_by_default():
+        term = _mock_terminal(["Save", "Hello"])
+        term._scrollback_len.return_value = 1
+        assert Locator(term, "Save").is_visible()
+
+    def it_ignores_scrollback_when_disabled():
+        term = _mock_terminal(["Save", "Hello"])
+        term._scrollback_len.return_value = 1
+        loc = Locator(term, "Save", scrollback=False)
+        assert not loc.is_visible()
+        assert loc.cells == []
+
+    def it_keeps_full_buffer_rows_for_viewport_matches():
+        term = _mock_terminal(["Save old", "", "Save new"])
+        term._scrollback_len.return_value = 1
+        loc = Locator(term, "Save", scrollback=False)
+        assert {c.row for c in loc.cells} == {2}
+
+    def it_returns_regex_text_from_viewport_only():
+        term = _mock_terminal(["v1.0", "v2.0"])
+        term._scrollback_len.return_value = 1
+        loc = Locator(term, re.compile(r"v\d\.\d"), scrollback=False)
+        assert loc.text() == "v2.0"
